@@ -550,9 +550,6 @@ BOOL WINAPI WriteFileHook(
 
 void LoadMods(AurieModule* Module)
 {
-	dl_lua = GetModState();
-
-	dl_lua["all_behaviors"] = dl_lua.create_table();
 
 	string dir = Files::GetModsDirectory();
 	string savedir = Files::GetModSavesDirectory();

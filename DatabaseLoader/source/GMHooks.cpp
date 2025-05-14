@@ -242,10 +242,6 @@ RValue& DatabaseLoader::GMHooks::ReloadAllMods(IN CInstance* Self, IN CInstance*
 
 	UnloadMods();
 
-	dl_lua = GetModState();
-
-	dl_lua["all_behaviors"] = dl_lua.create_table();
-
 	string dir = Files::GetModsDirectory();
 	string savedir = Files::GetModSavesDirectory();
 	string rooms = Files::GetSteamDirectory() + "rooms/";
