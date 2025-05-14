@@ -348,6 +348,13 @@ sol::state DatabaseLoader::GetModState()
 
 	inState["check_cart"] = DBLua::CheckCart;
 
+	inState["error_handler"] = [&](std::string err) {
+		g_YYTKInterface->PrintWarning("An Error occured : %s", err.c_str());
+		return err;
+	};
+
+	sol::protected_function::set_default_handler(inState["error_handler"]);
+
 	return inState;
 }
 
@@ -578,9 +585,16 @@ void LoadMods(AurieModule* Module)
 
 		if (std::filesystem::exists(mods[i].string() + "/main.lua"))
 		{
-			modState[currentState].script_file(mods[i].string() + "/main.lua");
+			sol::protected_function_result pfr = modState[currentState].safe_script_file(mods[i].string() + "/main.lua", [&](lua_State* state, sol::protected_function_result pfr) {
+				sol::error err = pfr;
+				g_YYTKInterface->PrintWarning("Error while loading mod %s : %s", mods[i].filename().string().c_str(), err.what());
+				return pfr;
+			});
+			if (!pfr.valid())
+				continue;
 
-			modState[currentState]["mod_load"].call();
+			if (! modState[currentState]["mod_load"].call().valid() )
+				continue;
 		}
 
 		g_YYTKInterface->Print(CM_LIGHTBLUE, "[Myriad Loader] Loaded mod " + mods[i].filename().string());
