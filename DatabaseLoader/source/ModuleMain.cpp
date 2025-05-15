@@ -558,6 +558,8 @@ BOOL WINAPI WriteFileHook(
 void LoadMods(AurieModule* Module)
 {
 
+	static bool firstLoad = true;
+
 	string dir = Files::GetModsDirectory();
 	string savedir = Files::GetModSavesDirectory();
 	string rooms = Files::GetSteamDirectory() + "rooms/";

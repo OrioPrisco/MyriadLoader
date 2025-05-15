@@ -12,7 +12,6 @@ namespace DatabaseLoader
 	inline int behaviorCount = 0;
 	inline int currentState = 0;
 	inline bool loadingMods = true;
-	inline bool firstLoad = true;
 	void UnloadMods();
 	sol::state GetModState();
 	int LoadFileRequire(lua_State* L);
