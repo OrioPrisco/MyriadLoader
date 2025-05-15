@@ -876,7 +876,7 @@ bool DatabaseLoader::DBLua::CheckCart(double cartid)
 
 void DatabaseLoader::DBLua::AddCallbackTo(double id, sol::protected_function function)
 {
-
+	g_YYTKInterface->PrintWarning("%s : Stub (id) %lf", __func__, id);
 }
 
 /***
@@ -1058,6 +1058,8 @@ sol::table DatabaseLoader::DBLua::PlayerData()
 void DatabaseLoader::DBLua::AddBestiaryEntry(string name, double race, double mugshot, double sprite, double hp, double score)
 {
 	int id = Files::HashString(name);
+	(void)id;
+	g_YYTKInterface->PrintWarning("%s : Stub (name) %s (race) %lf (mugshot) %lf (sprite) %lf (hp) %lf (score) %lf", __func__ , name.c_str(), race, mugshot, sprite, hp, score);
 }
 
 void DatabaseLoader::DBLua::AddRoomsTo(string sourceName, string destinationName)

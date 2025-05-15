@@ -19,6 +19,10 @@ void DatabaseLoader::DLInterfaceImpl::Destroy()
 
 void DatabaseLoader::DLInterfaceImpl::QueryVersion(OUT short& Major, OUT short& Minor, OUT short& Patch)
 {
+	g_YYTKInterface->PrintWarning("%s : Stub", __func__);
+	(void)Major;
+	(void)Minor;
+	(void)Patch;
 }
 
 void DatabaseLoader::DLInterfaceImpl::AddObjectBehavior(sol::table behavior)
@@ -28,12 +32,14 @@ void DatabaseLoader::DLInterfaceImpl::AddObjectBehavior(sol::table behavior)
 
 void DatabaseLoader::DLInterfaceImpl::InitializeVariable(int inst, string varName, sol::object val)
 {
-
+	g_YYTKInterface->PrintWarning("%s : Stub (inst) %d (varName) %s (val) omitted", __func__, inst, varName.c_str());
+	(void)val;
 }
 
 void DatabaseLoader::DLInterfaceImpl::SetVariable(int inst, string varName, sol::object val)
 {
-
+	g_YYTKInterface->PrintWarning("%s : Stub (inst) %d (varName) %s (val) omitted", __func__, inst, varName.c_str());
+	(void)val;
 }
 
 double DatabaseLoader::DLInterfaceImpl::GetInstanceID(double inst)
@@ -84,6 +90,7 @@ double DatabaseLoader::DLInterfaceImpl::GetSprite(string path, int imgnum, int x
 
 RValue DatabaseLoader::DLInterfaceImpl::SpawnBasicParticle(int x, int y, double sprite)
 {
+	g_YYTKInterface->PrintWarning("%s : Stub (x) %d (y) %d (sprite) %lf", __func__, x, y, sprite);
 	return 0;
 }
 
