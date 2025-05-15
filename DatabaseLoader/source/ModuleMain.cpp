@@ -201,6 +201,7 @@ void DatabaseLoader::UnloadMods()
 	}
 
 
+	roomFiles.clear();
 	customEnemyNames.clear();
 	customMinibossNames.clear();
 	customBossNames.clear();
