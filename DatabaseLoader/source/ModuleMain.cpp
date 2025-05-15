@@ -556,7 +556,7 @@ BOOL WINAPI WriteFileHook(
 	return g_WriteFileTrampoline(File, Buffer, NumberOfBytesToWrite, NumberOfBytesWritten, OverlapInformation);
 }
 
-void LoadMods()
+void DatabaseLoader::LoadMods()
 {
 	loadingMods = true;
 

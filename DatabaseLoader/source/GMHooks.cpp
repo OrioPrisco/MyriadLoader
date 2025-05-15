@@ -241,38 +241,9 @@ RValue& DatabaseLoader::GMHooks::ReloadAllMods(IN CInstance* Self, IN CInstance*
 	RValue& return_value = original_function(Self, Other, Result, ArgumentCount, Arguments);
 
 	UnloadMods();
+	LoadMods();
 
-	string dir = Files::GetModsDirectory();
-	string savedir = Files::GetModSavesDirectory();
-	string rooms = Files::GetSteamDirectory() + "rooms/";
-	string roomsBackup = Files::GetSteamDirectory() + "rooms/backup/";
-
-	Files::MakeDirectory(dir);
-	Files::MakeDirectory(savedir);
-	Files::MakeDirectory(roomsBackup);
-
-	vector<filesystem::path> mods = Files::GetImmediateSubfolders(dir);
-
-	for (size_t i = 0; i < mods.size(); i++)
-	{
-		modState.push_back(GetModState());
-
-		currentState = i;
-
-		modState[currentState].clear_package_loaders();
-		modState[currentState].add_package_loader(LoadFileRequire);
-
-		modState[currentState]["all_behaviors"] = modState[currentState].create_table();
-
-		if (std::filesystem::exists(mods[i].string() + "/main.lua"))
-		{
-			modState[currentState].script_file(mods[i].string() + "/main.lua");
-
-			modState[currentState]["mod_load"].call();
-		}
-
-		g_YYTKInterface->Print(CM_LIGHTBLUE, "[Myriad Loader] Loaded mod " + mods[i].filename().string());
-	}
+	return return_value;
 }
 
 RValue& DatabaseLoader::GMHooks::SpawnRoomObject(IN CInstance* Self, IN CInstance* Other, OUT RValue& Result, IN int ArgumentCount, IN RValue** Arguments)
