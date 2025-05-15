@@ -210,7 +210,7 @@ void DatabaseLoader::UnloadMods()
 	modState.clear();
 }
 
-sol::state DatabaseLoader::GetModState()
+sol::state DatabaseLoader::MakeModState()
 {
 	sol::state inState;
 
@@ -573,7 +573,7 @@ void DatabaseLoader::LoadMods()
 
 	for (size_t i = 0; i < mods.size(); i++)
 	{
-		modState.push_back(GetModState());
+		modState.push_back(MakeModState());
 
 		currentState = i;
 
