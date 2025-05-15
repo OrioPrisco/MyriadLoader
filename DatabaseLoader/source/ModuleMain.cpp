@@ -179,11 +179,7 @@ static void RegisterData(lua_State* state, sol::table data)
 
 void DatabaseLoader::UnloadMods()
 {
-	string dir = Files::GetModsDirectory();
-
-	vector<filesystem::path> mods = Files::GetImmediateSubfolders(dir);
-
-	for (size_t i = 0; i < mods.size(); i++) 
+	for (size_t i = 0; i < modState.size(); i++)
 	{
 		currentState = i;
 
@@ -191,7 +187,7 @@ void DatabaseLoader::UnloadMods()
 
 		//lua_close(modState[currentState]);
 
-		g_YYTKInterface->Print(CM_LIGHTBLUE, "[Myriad Loader] Unloaded mod " + mods[i].filename().string());
+		g_YYTKInterface->Print(CM_LIGHTBLUE, "[Myriad Loader] Unloaded mod " + modState[currentState]["mod_name"].get<string>());
 	}
 
 	if (!bossListNum.empty())
@@ -586,18 +582,20 @@ void DatabaseLoader::LoadMods()
 
 	for (size_t i = 0; i < mods.size(); i++)
 	{
-		modState.push_back(MakeModState());
+		auto state = MakeModState();
 
 		currentState = i;
 
-		modState[currentState].clear_package_loaders();
-		modState[currentState].add_package_loader(LoadFileRequire);
+		state.clear_package_loaders();
+		state.add_package_loader(LoadFileRequire);
 
-		modState[currentState]["all_behaviors"] = modState[currentState].create_table();
+		// We should prevent users from overriding these
+		state["all_behaviors"] = state.create_table();
+		state["mod_name"] = mods[i].filename().string();
 
 		if (std::filesystem::exists(mods[i].string() + "/main.lua"))
 		{
-			sol::protected_function_result pfr = modState[currentState].safe_script_file(mods[i].string() + "/main.lua", [&](lua_State* state, sol::protected_function_result pfr) {
+			sol::protected_function_result pfr = state.safe_script_file(mods[i].string() + "/main.lua", [&](lua_State* state, sol::protected_function_result pfr) {
 				sol::error err = pfr;
 				g_YYTKInterface->PrintWarning("Error while loading mod %s : %s", mods[i].filename().string().c_str(), err.what());
 				return pfr;
@@ -605,9 +603,11 @@ void DatabaseLoader::LoadMods()
 			if (!pfr.valid())
 				continue;
 
-			if (! modState[currentState]["mod_load"].call().valid() )
+			if (! state["mod_load"].call().valid() )
 				continue;
 		}
+
+		modState.push_back(std::move(state));
 
 		g_YYTKInterface->Print(CM_LIGHTBLUE, "[Myriad Loader] Loaded mod " + mods[i].filename().string());
 	}
