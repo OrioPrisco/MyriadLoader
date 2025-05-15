@@ -358,7 +358,7 @@ sol::state DatabaseLoader::GetModState()
 	return inState;
 }
 
-void UnloadRoomFiles()
+static void RestoreRoomFiles()
 {
 	for (size_t i = 0; i < roomFiles.size(); i++)
 	{
@@ -827,7 +827,7 @@ void LoadMods(AurieModule* Module)
 		);
 	}
 
-	UnloadRoomFiles();
+	RestoreRoomFiles();
 
 	g_YYTKInterface->CallBuiltin("instance_activate_all", {});
 	loadingMods = false;
