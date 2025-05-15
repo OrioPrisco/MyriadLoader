@@ -556,22 +556,18 @@ BOOL WINAPI WriteFileHook(
 	return g_WriteFileTrampoline(File, Buffer, NumberOfBytesToWrite, NumberOfBytesWritten, OverlapInformation);
 }
 
-void LoadMods(AurieModule* Module)
+void LoadMods()
 {
-
-	static bool firstLoad = true;
+	loadingMods = true;
 
 	string dir = Files::GetModsDirectory();
 	string savedir = Files::GetModSavesDirectory();
 	string rooms = Files::GetSteamDirectory() + "rooms/";
 	string roomsBackup = Files::GetSteamDirectory() + "rooms/backup/";
 
-	if (firstLoad)
-	{
-		Files::MakeDirectory(dir);
-		Files::MakeDirectory(savedir);
-		Files::MakeDirectory(roomsBackup);
-	}
+	Files::MakeDirectory(dir);
+	Files::MakeDirectory(savedir);
+	Files::MakeDirectory(roomsBackup);
 
 	vector<filesystem::path> mods = Files::GetImmediateSubfolders(dir);
 
@@ -609,129 +605,6 @@ void LoadMods(AurieModule* Module)
 		Files::AddRoomsToFile(roomFiles.at(i).sourceName, roomFiles.at(i).destinationName);
 	}
 
-	if (firstLoad)
-	{
-		yytk_interface->CreateCallback(
-			Module,
-			YYTK::EVENT_OBJECT_CALL,
-			GMHooks::EnemyData,
-			0);
-
-		yytk_interface->CreateCallback(
-			Module,
-			YYTK::EVENT_FRAME,
-			ObjectBehaviorRun,
-			0);
-
-		yytk_interface->CreateCallback(
-			Module,
-			YYTK::EVENT_OBJECT_CALL,
-			GMHooks::FloorData,
-			0);
-	}
-
-	CScript* script_data = nullptr;
-	PVOID original_function = nullptr;
-
-	if (firstLoad)
-	{
-		g_YYTKInterface->GetNamedRoutinePointer(
-			"gml_Script_music_jukebox_get_songs",
-			reinterpret_cast<PVOID*>(&script_data)
-		);
-		MmCreateHook(
-			g_ArSelfModule,
-			"Jukebox Injection",
-			script_data->m_Functions->m_ScriptFunction,
-			GMHooks::JukeboxInjection,
-			&original_function
-		);
-
-		g_YYTKInterface->GetNamedRoutinePointer(
-			"gml_Script_music_do",
-			reinterpret_cast<PVOID*>(&script_data)
-		);
-		MmCreateHook(
-			g_ArSelfModule,
-			"MusicDo",
-			script_data->m_Functions->m_ScriptFunction,
-			GMHooks::MusicDo,
-			&original_function
-		);
-
-		g_YYTKInterface->GetNamedRoutinePointer(
-			"gml_Script_music_do_loop",
-			reinterpret_cast<PVOID*>(&script_data)
-		);
-		MmCreateHook(
-			g_ArSelfModule,
-			"MusicDoLoop",
-			script_data->m_Functions->m_ScriptFunction,
-			GMHooks::MusicDoLoop,
-			&original_function
-		);
-
-		g_YYTKInterface->GetNamedRoutinePointer(
-			"gml_Script_anon_gml_Object_obj_boss_setter_Create_0_29_gml_Object_obj_boss_setter_Create_0",
-			reinterpret_cast<PVOID*>(&script_data)
-		);
-		MmCreateHook(
-			g_ArSelfModule,
-			"MusicDoLoop",
-			script_data->m_Functions->m_ScriptFunction,
-			GMHooks::ChooseBossIntro,
-			&original_function
-		);
-
-		g_YYTKInterface->GetNamedRoutinePointer(
-			"gml_Script_music_do_loop_from_start",
-			reinterpret_cast<PVOID*>(&script_data)
-		);
-		MmCreateHook(
-			g_ArSelfModule,
-			"MusicDoLoopFromStart",
-			script_data->m_Functions->m_ScriptFunction,
-			GMHooks::MusicDoLoopFromStart,
-			&original_function
-		);
-
-		g_YYTKInterface->GetNamedRoutinePointer(
-			"gml_Script_enemy_damage",
-			reinterpret_cast<PVOID*>(&script_data)
-		);
-		MmCreateHook(
-			g_ArSelfModule,
-			"EnemyDamage",
-			script_data->m_Functions->m_ScriptFunction,
-			GMHooks::EnemyDamage,
-			&original_function
-		);
-
-		g_YYTKInterface->GetNamedRoutinePointer(
-			"gml_Script_player_takeHit",
-			reinterpret_cast<PVOID*>(&script_data)
-		);
-		MmCreateHook(
-			g_ArSelfModule,
-			"PlayerTakeHit",
-			script_data->m_Functions->m_ScriptFunction,
-			GMHooks::PlayerTakeHit,
-			&original_function
-		);
-
-		g_YYTKInterface->GetNamedRoutinePointer(
-			"gml_Script_button_exit_to_menu",
-			reinterpret_cast<PVOID*>(&script_data)
-		);
-		MmCreateHook(
-			g_ArSelfModule,
-			"ReloadAllMods",
-			script_data->m_Functions->m_ScriptFunction,
-			GMHooks::ReloadAllMods,
-			&original_function
-		);
-	}
-
 	int size = g_YYTKInterface->CallBuiltin("array_length", { GMWrappers::GetGlobal("gen_list") }).ToInt64();
 
 	for (size_t i = size; i <= 15000; i++)
@@ -741,94 +614,207 @@ void LoadMods(AurieModule* Module)
 
 	GMWrappers::CallGameScript("gml_Script_load_room_files", {});
 
-	if (firstLoad)
-	{
-		g_YYTKInterface->GetNamedRoutinePointer(
-			"gml_Script_instance_create",
-			reinterpret_cast<PVOID*>(&script_data)
-		);
-		MmCreateHook(
-			g_ArSelfModule,
-			"SpawnRoomObject",
-			script_data->m_Functions->m_ScriptFunction,
-			GMHooks::SpawnRoomObject,
-			&original_function
-		);
-
-		g_YYTKInterface->GetNamedRoutinePointer(
-			"gml_Script_write_savedata",
-			reinterpret_cast<PVOID*>(&script_data)
-		);
-		MmCreateHook(
-			g_ArSelfModule,
-			"WriteSaveData",
-			script_data->m_Functions->m_ScriptFunction,
-			GMHooks::WriteSaveData,
-			&original_function
-		);
-
-		g_YYTKInterface->GetNamedRoutinePointer(
-			"gml_Script_write_midsave",
-			reinterpret_cast<PVOID*>(&script_data)
-		);
-		MmCreateHook(
-			g_ArSelfModule,
-			"WriteMidSave",
-			script_data->m_Functions->m_ScriptFunction,
-			GMHooks::WriteMidSave,
-			&original_function
-		);
-
-		g_YYTKInterface->GetNamedRoutinePointer(
-			"gml_GlobalScript_button_exit_out",
-			reinterpret_cast<PVOID*>(&script_data)
-		);
-		MmCreateHook(
-			g_ArSelfModule,
-			"ExitGame",
-			script_data->m_Functions->m_ScriptFunction,
-			GMHooks::ExitGame,
-			&original_function
-		);
-
-		g_YYTKInterface->GetNamedRoutinePointer(
-			"gml_Script_button_start",
-			reinterpret_cast<PVOID*>(&script_data)
-		);
-		MmCreateHook(
-			g_ArSelfModule,
-			"EnterRun",
-			script_data->m_Functions->m_ScriptFunction,
-			GMHooks::EnterRun,
-			&original_function
-		);
-
-		g_YYTKInterface->GetNamedRoutinePointer(
-			"gml_Object_obj_beacon_Other_25",
-			reinterpret_cast<PVOID*>(&script_data)
-		);
-		MmCreateHook(
-			g_ArSelfModule,
-			"ChooseBossIntro",
-			script_data->m_Functions->m_ScriptFunction,
-			GMHooks::ChooseBossIntro,
-			&original_function
-		);
-
-		MmCreateHook(
-			Module,
-			"QL_WriteFile",
-			WriteFile,
-			WriteFileHook,
-			reinterpret_cast<PVOID*>(&g_WriteFileTrampoline)
-		);
-	}
-
 	RestoreRoomFiles();
 
-	g_YYTKInterface->CallBuiltin("instance_activate_all", {});
 	loadingMods = false;
-	firstLoad = false;
+}
+
+static void RegisterHooks(AurieModule* Module) {
+	yytk_interface->CreateCallback(
+		Module,
+		YYTK::EVENT_OBJECT_CALL,
+		GMHooks::EnemyData,
+		0);
+
+	yytk_interface->CreateCallback(
+		Module,
+		YYTK::EVENT_FRAME,
+		ObjectBehaviorRun,
+		0);
+
+	yytk_interface->CreateCallback(
+		Module,
+		YYTK::EVENT_OBJECT_CALL,
+		GMHooks::FloorData,
+		0);
+
+	CScript* script_data = nullptr;
+	PVOID original_function = nullptr;
+
+	g_YYTKInterface->GetNamedRoutinePointer(
+		"gml_Script_music_jukebox_get_songs",
+		reinterpret_cast<PVOID*>(&script_data)
+	);
+	MmCreateHook(
+		g_ArSelfModule,
+		"Jukebox Injection",
+		script_data->m_Functions->m_ScriptFunction,
+		GMHooks::JukeboxInjection,
+		&original_function
+	);
+
+	g_YYTKInterface->GetNamedRoutinePointer(
+		"gml_Script_music_do",
+		reinterpret_cast<PVOID*>(&script_data)
+	);
+	MmCreateHook(
+		g_ArSelfModule,
+		"MusicDo",
+		script_data->m_Functions->m_ScriptFunction,
+		GMHooks::MusicDo,
+		&original_function
+	);
+
+	g_YYTKInterface->GetNamedRoutinePointer(
+		"gml_Script_music_do_loop",
+		reinterpret_cast<PVOID*>(&script_data)
+	);
+	MmCreateHook(
+		g_ArSelfModule,
+		"MusicDoLoop",
+		script_data->m_Functions->m_ScriptFunction,
+		GMHooks::MusicDoLoop,
+		&original_function
+	);
+
+	g_YYTKInterface->GetNamedRoutinePointer(
+		"gml_Script_anon_gml_Object_obj_boss_setter_Create_0_29_gml_Object_obj_boss_setter_Create_0",
+		reinterpret_cast<PVOID*>(&script_data)
+	);
+	MmCreateHook(
+		g_ArSelfModule,
+		"MusicDoLoop",
+		script_data->m_Functions->m_ScriptFunction,
+		GMHooks::ChooseBossIntro,
+		&original_function
+	);
+
+	g_YYTKInterface->GetNamedRoutinePointer(
+		"gml_Script_music_do_loop_from_start",
+		reinterpret_cast<PVOID*>(&script_data)
+	);
+	MmCreateHook(
+		g_ArSelfModule,
+		"MusicDoLoopFromStart",
+		script_data->m_Functions->m_ScriptFunction,
+		GMHooks::MusicDoLoopFromStart,
+		&original_function
+	);
+
+	g_YYTKInterface->GetNamedRoutinePointer(
+		"gml_Script_enemy_damage",
+		reinterpret_cast<PVOID*>(&script_data)
+	);
+	MmCreateHook(
+		g_ArSelfModule,
+		"EnemyDamage",
+		script_data->m_Functions->m_ScriptFunction,
+		GMHooks::EnemyDamage,
+		&original_function
+	);
+
+	g_YYTKInterface->GetNamedRoutinePointer(
+		"gml_Script_player_takeHit",
+		reinterpret_cast<PVOID*>(&script_data)
+	);
+	MmCreateHook(
+		g_ArSelfModule,
+		"PlayerTakeHit",
+		script_data->m_Functions->m_ScriptFunction,
+		GMHooks::PlayerTakeHit,
+		&original_function
+	);
+
+	g_YYTKInterface->GetNamedRoutinePointer(
+		"gml_Script_button_exit_to_menu",
+		reinterpret_cast<PVOID*>(&script_data)
+	);
+	MmCreateHook(
+		g_ArSelfModule,
+		"ReloadAllMods",
+		script_data->m_Functions->m_ScriptFunction,
+		GMHooks::ReloadAllMods,
+		&original_function
+	);
+	g_YYTKInterface->GetNamedRoutinePointer(
+		"gml_Script_instance_create",
+		reinterpret_cast<PVOID*>(&script_data)
+	);
+	MmCreateHook(
+		g_ArSelfModule,
+		"SpawnRoomObject",
+		script_data->m_Functions->m_ScriptFunction,
+		GMHooks::SpawnRoomObject,
+		&original_function
+	);
+
+	g_YYTKInterface->GetNamedRoutinePointer(
+		"gml_Script_write_savedata",
+		reinterpret_cast<PVOID*>(&script_data)
+	);
+	MmCreateHook(
+		g_ArSelfModule,
+		"WriteSaveData",
+		script_data->m_Functions->m_ScriptFunction,
+		GMHooks::WriteSaveData,
+		&original_function
+	);
+
+	g_YYTKInterface->GetNamedRoutinePointer(
+		"gml_Script_write_midsave",
+		reinterpret_cast<PVOID*>(&script_data)
+	);
+	MmCreateHook(
+		g_ArSelfModule,
+		"WriteMidSave",
+		script_data->m_Functions->m_ScriptFunction,
+		GMHooks::WriteMidSave,
+		&original_function
+	);
+
+	g_YYTKInterface->GetNamedRoutinePointer(
+		"gml_GlobalScript_button_exit_out",
+		reinterpret_cast<PVOID*>(&script_data)
+	);
+	MmCreateHook(
+		g_ArSelfModule,
+		"ExitGame",
+		script_data->m_Functions->m_ScriptFunction,
+		GMHooks::ExitGame,
+		&original_function
+	);
+
+	g_YYTKInterface->GetNamedRoutinePointer(
+		"gml_Script_button_start",
+		reinterpret_cast<PVOID*>(&script_data)
+	);
+	MmCreateHook(
+		g_ArSelfModule,
+		"EnterRun",
+		script_data->m_Functions->m_ScriptFunction,
+		GMHooks::EnterRun,
+		&original_function
+	);
+
+	g_YYTKInterface->GetNamedRoutinePointer(
+		"gml_Object_obj_beacon_Other_25",
+		reinterpret_cast<PVOID*>(&script_data)
+	);
+	MmCreateHook(
+		g_ArSelfModule,
+		"ChooseBossIntro",
+		script_data->m_Functions->m_ScriptFunction,
+		GMHooks::ChooseBossIntro,
+		&original_function
+	);
+
+	MmCreateHook(
+		Module,
+		"QL_WriteFile",
+		WriteFile,
+		WriteFileHook,
+		reinterpret_cast<PVOID*>(&g_WriteFileTrampoline)
+	);
 }
 
 EXPORTED AurieStatus ModuleInitialize(
@@ -858,13 +844,12 @@ EXPORTED AurieStatus ModuleInitialize(
 	if (!AurieSuccess(last_status))
 		return AURIE_MODULE_DEPENDENCY_NOT_RESOLVED;
 
-	loadingMods = true;
-
 	g_YYTKInterface->CallBuiltin("instance_deactivate_object", { g_YYTKInterface->CallBuiltin("asset_get_index", {"obj_intro"}) });
 
-	std::thread LoadModsThread(LoadMods, Module);
+	LoadMods();
+	RegisterHooks(Module);
 
-	LoadModsThread.join();
+	g_YYTKInterface->CallBuiltin("instance_activate_all", {});
 
 	return AURIE_SUCCESS;
 }
