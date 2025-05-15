@@ -13,3 +13,10 @@
 *.iobj
 *.obj
 *.pdb
+
+*.swp
+.cache
+CMake
+CMakeLists.txt
+compile_commands.json
+build/
