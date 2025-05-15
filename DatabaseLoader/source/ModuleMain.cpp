@@ -630,11 +630,7 @@ void LoadMods(AurieModule* Module)
 	}
 
 	CScript* script_data = nullptr;
-	int script_index = 0;
 	PVOID original_function = nullptr;
-
-	TRoutine game_function = nullptr;
-	TRoutine original_builtin_function = nullptr;
 
 	if (firstLoad)
 	{
