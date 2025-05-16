@@ -24,8 +24,8 @@ namespace DatabaseLoader
 		static void SetVar(double inst, string varName, sol::object val);
 		static void InitGlobal(string varName, sol::object val);
 		static void SetGlobal(string varName, sol::object val);
-		static sol::lua_value GetVar(double inst, string varName);
-		static sol::lua_value GetGlobal(string varName);
+		static sol::lua_value GetVar(lua_State* state, double inst, string varName);
+		static sol::lua_value GetGlobal(lua_State* state, string varName);
 		static double GetDouble(double inst, string varName);
 		static bool GetBool(double inst, string varName);
 		static string GetString(double inst, string varName);
@@ -42,7 +42,7 @@ namespace DatabaseLoader
 		static void ShowBossMessage(double x, double y, string str);
 
 		static double GetAsset(string name);
-		static sol::lua_value CallFunction(string name, sol::table args);
+		static sol::lua_value CallFunction(lua_State* state, string name, sol::table args);
 		static void CallGameFunction(string name, sol::table args);
 
 		static double SpawnParticle(double x, double y, double xvel, double yvel, double sprite);
@@ -75,14 +75,14 @@ namespace DatabaseLoader
 		static void DrawVertexTexture(double x, double y, double texcoordx, double texcoordy);
 		static void DrawVertexEnd();
 
-		static sol::table DirectionTo(double x1, double y1, double x2, double y2);
+		static sol::table DirectionTo(lua_State* state, double x1, double y1, double x2, double y2);
 
-		static sol::table EnemyData(string name);
-		static sol::table CartridgeData(string name, string shown, string desc);
-		static sol::table ProjectileData(string name);
-		static sol::table GlobalData();
-		static sol::table PlayerData();
-		static sol::table FloorData(string name);
+		static sol::table EnemyData(lua_State* state, string name);
+		static sol::table CartridgeData(lua_State* state, string name, string shown, string desc);
+		static sol::table ProjectileData(lua_State* state, string name);
+		static sol::table GlobalData(lua_State* state);
+		static sol::table PlayerData(lua_State* state);
+		static sol::table FloorData(lua_State *state, string name);
 
 		static void AddBestiaryEntry(string name, double race, double mugshot, double sprite, double hp, double score);
 

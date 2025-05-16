@@ -26,16 +26,16 @@ RValue ObjectToValue(sol::object obj)
 		return RValue(obj.as<string_view>());
 	}
 }
-sol::lua_value ValueToObject(RValue obj)
+sol::lua_value ValueToObject(lua_State* state, RValue obj)
 {
 	switch (obj.m_Kind)
 	{
 	case YYTK::VALUE_REAL:
-		return sol::lua_value(modState[currentState], obj.ToDouble());
+		return sol::lua_value(state, obj.ToDouble());
 	case YYTK::VALUE_BOOL:
-		return sol::lua_value(modState[currentState], obj.ToBoolean());
+		return sol::lua_value(state, obj.ToBoolean());
 	case YYTK::VALUE_STRING:
-		return sol::lua_value(modState[currentState], obj.ToString());
+		return sol::lua_value(state, obj.ToString());
 	}
 }
 RValue DatabaseLoader::DBLua::CallBuiltinLua(
@@ -262,18 +262,18 @@ void DatabaseLoader::DBLua::SetGlobal(string varName, sol::object val)
 	GMWrappers::SetGlobal(varName, ObjectToValue(val));
 }
 
-sol::lua_value DatabaseLoader::DBLua::GetVar(double inst, string varName)
+sol::lua_value DatabaseLoader::DBLua::GetVar(lua_State* state, double inst, string varName)
 {
 	RValue val = g_YYTKInterface->CallBuiltin("variable_instance_get", {
 		inst,
 		(string_view)varName });
 
-	return ValueToObject(val);
+	return ValueToObject(state, val);
 }
 
-sol::lua_value DatabaseLoader::DBLua::GetGlobal(string varName)
+sol::lua_value DatabaseLoader::DBLua::GetGlobal(lua_State* state, string varName)
 {
-	return ValueToObject(GMWrappers::GetGlobal(varName));
+	return ValueToObject(state, GMWrappers::GetGlobal(varName));
 }
 
 void DatabaseLoader::DBLua::InitDouble(double inst, string varName, double val)
@@ -560,7 +560,7 @@ Calls a built-in GameMaker function. Returns void.
 @param args a table containing the arguments to pass in
 @return void
 */
-sol::lua_value DatabaseLoader::DBLua::CallFunction(string name, sol::table args)
+sol::lua_value DatabaseLoader::DBLua::CallFunction(lua_State* state, string name, sol::table args)
 {
 	vector<RValue> vals = {};
 
@@ -571,7 +571,7 @@ sol::lua_value DatabaseLoader::DBLua::CallFunction(string name, sol::table args)
 
 	RValue val = g_YYTKInterface->CallBuiltin(name.c_str(), vals);
 
-	return ValueToObject(val);
+	return ValueToObject(state, val);
 }
 
 void DatabaseLoader::DBLua::DrawRect(double x1, double y1, double x2, double y2, bool outline)
@@ -968,19 +968,19 @@ void DatabaseLoader::DBLua::DrawVertexEnd()
 	g_YYTKInterface->CallBuiltin("draw_primitive_end", {});
 }
 
-sol::table DatabaseLoader::DBLua::DirectionTo(double x1, double y1, double x2, double y2)
+sol::table DatabaseLoader::DBLua::DirectionTo(lua_State* state, double x1, double y1, double x2, double y2)
 {
 	RValue dir = g_YYTKInterface->CallBuiltin("point_direction", {x1, y1, x2, y2});
 
 	RValue x = g_YYTKInterface->CallBuiltin("lengthdir_x", { 1, dir });
 	RValue y = g_YYTKInterface->CallBuiltin("lengthdir_y", { 1, dir });
 
-	return modState[currentState].create_table_with("x", x.ToDouble(), "y", y.ToDouble());
+	return sol::table::create_with(state, "x", x.ToDouble(), "y", y.ToDouble());
 }
 
-sol::table DatabaseLoader::DBLua::EnemyData(string name)
+sol::table DatabaseLoader::DBLua::EnemyData(lua_State* state, string name)
 {
-	return modState[currentState].create_table_with(
+	return sol::table::create_with(state,
 		"DataType", "enemy",
 		"Name", name,
 		"Miniboss", false,
@@ -996,10 +996,9 @@ sol::table DatabaseLoader::DBLua::EnemyData(string name)
 		"TakeDamage", [](double, double) {});
 }
 
-
-sol::table DatabaseLoader::DBLua::CartridgeData(string name, string shown, string desc)
+sol::table DatabaseLoader::DBLua::CartridgeData(lua_State* state, string name, string shown, string desc)
 {
-	return modState[currentState].create_table_with(
+	return sol::table::create_with(state,
 		"DataType", "cartridge",
 		"Name", name,
 		"ShownName", shown,
@@ -1008,9 +1007,9 @@ sol::table DatabaseLoader::DBLua::CartridgeData(string name, string shown, strin
 }
 
 
-sol::table DatabaseLoader::DBLua::FloorData(string name)
+sol::table DatabaseLoader::DBLua::FloorData(lua_State* state, string name)
 {
-	return modState[currentState].create_table_with(
+	return sol::table::create_with(state,
 		"DataType", "floormap",
 		"Name", name,
 		"Floor", 0,
@@ -1025,9 +1024,9 @@ sol::table DatabaseLoader::DBLua::FloorData(string name)
 }
 
 
-sol::table DatabaseLoader::DBLua::ProjectileData(string name)
+sol::table DatabaseLoader::DBLua::ProjectileData(lua_State* state, string name)
 {
-	return modState[currentState].create_table_with(
+	return sol::table::create_with(state,
 		"DataType", "projectile",
 		"Name", name,
 		"Create", [](double) {},
@@ -1036,9 +1035,9 @@ sol::table DatabaseLoader::DBLua::ProjectileData(string name)
 		"Draw", [](double) {});
 }
 
-sol::table DatabaseLoader::DBLua::GlobalData()
+sol::table DatabaseLoader::DBLua::GlobalData(lua_State* state)
 {
-	return modState[currentState].create_table_with(
+	return sol::table::create_with(state,
 		"DataType", "global",
 		"Step", []() {},
 		"OverrideBoss", []() { return ""; },
@@ -1046,9 +1045,9 @@ sol::table DatabaseLoader::DBLua::GlobalData()
 		"DrawUI", []() {});
 }
 
-sol::table DatabaseLoader::DBLua::PlayerData()
+sol::table DatabaseLoader::DBLua::PlayerData(lua_State* state)
 {
-	return modState[currentState].create_table_with(
+	return sol::table::create_with(state,
 		"DataType", "player",
 		"Step", [](double) {},
 		"TakeDamage", [](double, double) {},

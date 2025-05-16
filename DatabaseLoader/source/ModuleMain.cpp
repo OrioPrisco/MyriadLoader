@@ -49,13 +49,12 @@ string GetUserDirectory() {
 string bossListNum;
 RValue bossListCopy;
 
-
-
-static void RegisterData(sol::table data)
+static void RegisterData(lua_State* state, sol::table data)
 {
-	sol::table tbl = modState[currentState]["all_behaviors"];
+	sol::state_view sview(state);
+	sol::table tbl = sview["all_behaviors"];
 
-	modState[currentState]["all_behaviors"][tbl.size() + 1] = data;
+	tbl[tbl.size() + 1] = data;
 
 	RValue enemytype = g_YYTKInterface->CallBuiltin("asset_get_index", { (string_view)data.get<string>("Name") });
 
@@ -210,9 +209,23 @@ void DatabaseLoader::UnloadMods()
 	modState.clear();
 }
 
+// Helper to bind the state_ptr and pass functions to lua
+// Sol is unable to properly examine the result std::bind front
+// but it can examine this
+template <typename Ret, typename... Args, typename BoundArg>
+auto bind_one(Ret(*func)(BoundArg, Args...), BoundArg bound) {
+	return std::function<Ret(Args...)>(
+		[=](Args... args) {
+			return func(bound, args...);
+		}
+	);
+}
+
 sol::state DatabaseLoader::MakeModState()
 {
 	sol::state inState;
+
+	lua_State* const state_ptr = inState.lua_state();
 
 	inState.open_libraries(sol::lib::base, sol::lib::package, sol::lib::table, sol::lib::math, sol::lib::string);
 
@@ -236,14 +249,14 @@ sol::state DatabaseLoader::MakeModState()
 	inState["screen_center_x"] = 0;
 	inState["screen_center_y"] = 0;
 
-	inState["enemy_data"] = DBLua::EnemyData;
-	inState["cartridge_data"] = DBLua::CartridgeData;
-	inState["projectile_data"] = DBLua::ProjectileData;
-	inState["global_data"] = DBLua::GlobalData;
-	inState["player_data"] = DBLua::PlayerData;
-	inState["custom_floor"] = DBLua::FloorData;
+	inState["enemy_data"] = bind_one(DBLua::EnemyData, state_ptr);
+	inState["cartridge_data"] = bind_one(DBLua::CartridgeData, state_ptr);
+	inState["projectile_data"] = bind_one(DBLua::ProjectileData, state_ptr);
+	inState["global_data"] = bind_one(DBLua::GlobalData, state_ptr);
+	inState["player_data"] = bind_one(DBLua::PlayerData, state_ptr);
+	inState["custom_floor"] = bind_one(DBLua::FloorData, state_ptr);
 
-	inState["register_data"] = RegisterData;
+	inState["register_data"] = bind_one(RegisterData, state_ptr);
 
 	inState["spawn_particle"] = DBLua::SpawnParticle;
 
@@ -251,13 +264,13 @@ sol::state DatabaseLoader::MakeModState()
 
 	inState["set_var"] = DBLua::SetVar;
 
-	inState["get_var"] = DBLua::GetVar;
+	inState["get_var"] = bind_one(DBLua::GetVar, state_ptr);
 
 	inState["init_global"] = DBLua::InitGlobal;
 
 	inState["set_global"] = DBLua::SetGlobal;
 
-	inState["get_global"] = DBLua::GetGlobal;
+	inState["get_global"] = bind_one(DBLua::GetGlobal, state_ptr);
 
 	inState["init_number"] = DBLua::InitVar;
 
@@ -271,11 +284,11 @@ sol::state DatabaseLoader::MakeModState()
 
 	inState["set_string"] = DBLua::SetVar;
 
-	inState["get_number"] = DBLua::GetVar;
+	inState["get_number"] = bind_one(DBLua::GetVar, state_ptr);
 
-	inState["get_bool"] = DBLua::GetVar;
+	inState["get_bool"] = bind_one(DBLua::GetVar, state_ptr);
 
-	inState["get_string"] = DBLua::GetVar;
+	inState["get_string"] = bind_one(DBLua::GetVar, state_ptr);
 
 	inState["custom_sprite"] = DBLua::GetCustomSprite;
 
@@ -287,7 +300,7 @@ sol::state DatabaseLoader::MakeModState()
 
 	inState["get_asset"] = DBLua::GetAsset;
 
-	inState["call_function"] = DBLua::CallFunction;
+	inState["call_function"] = bind_one(DBLua::CallFunction, state_ptr);
 
 	inState["call_game_function"] = DBLua::CallGameFunction;
 
