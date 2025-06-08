@@ -118,58 +118,33 @@ RValue& DatabaseLoader::GMHooks::EnemyDamage(IN CInstance* Self, IN CInstance* O
 	double InstanceID = g_YYTKInterface->CallBuiltin("variable_instance_get", { Instance, "id" }).ToDouble();
 
 	RValue objectIndex = g_YYTKInterface->CallBuiltin("variable_instance_get", { Instance, "object_index" }).ToDouble();
-	RValue CustomDataString = "";
 
-	RValue ObjectIndexString = g_YYTKInterface->CallBuiltin("object_get_name", { objectIndex });
-
-	bool is_custom = false;
+	RValue InstanceName = "";
 	if (g_YYTKInterface->CallBuiltin("instance_variable_exists", { Instance, "myr_CustomName" }).ToBoolean())
 	{
-		is_custom = true;
-		CustomDataString = g_YYTKInterface->CallBuiltin("variable_instance_get", { Instance, "myr_CustomName" });
+		InstanceName = g_YYTKInterface->CallBuiltin("variable_instance_get", { Instance, "myr_CustomName" });
+	}
+	else {
+		InstanceName = g_YYTKInterface->CallBuiltin("object_get_name", { objectIndex });
 	}
 
 	double AttackDamage = (Arguments[0])->ToDouble();
 
 	for (int stateNum = 0; stateNum < modState.size(); stateNum++)
 	{
-		if (is_custom)
+		if (modState.at(stateNum)["all_behaviors"])
 		{
-			if (modState.at(stateNum)["all_behaviors"])
+			sol::table count = modState.at(stateNum)["all_behaviors"];
+			for (double var = 0; var < count.size() + 1; var++)
 			{
-				sol::table count = modState.at(stateNum)["all_behaviors"];
-				for (double var = 0; var < count.size() + 1; var++)
+				sol::table tbl = modState.at(stateNum)["all_behaviors"][var];
+				if (modState.at(stateNum)["all_behaviors"][var])
 				{
-					sol::table tbl = modState.at(stateNum)["all_behaviors"][var];
-					if (modState.at(stateNum)["all_behaviors"][var])
+					if (tbl.get<string>("DataType") == "enemy")
 					{
-						if (tbl.get<string>("DataType") == "enemy")
+						if (tbl.get<string>("Name") == InstanceName.ToString() || tbl.get<string>("Name") == "all")
 						{
-							if (tbl.get<string>("Name") == CustomDataString.ToString() || tbl.get<string>("Name") == "all")
-							{
-								modState.at(stateNum)["all_behaviors"][var]["TakeDamage"].call(InstanceID, AttackDamage);
-							}
-						}
-					}
-				}
-			}
-		}
-		else
-		{
-			if (modState.at(stateNum)["all_behaviors"])
-			{
-				sol::table count = modState.at(stateNum)["all_behaviors"];
-				for (double var = 0; var < count.size() + 1; var++)
-				{
-					sol::table tbl = modState.at(stateNum)["all_behaviors"][var];
-					if (modState.at(stateNum)["all_behaviors"][var])
-					{
-						if (tbl.get<string>("DataType") == "enemy")
-						{
-							if (tbl.get<string>("Name") == ObjectIndexString.ToString() || tbl.get<string>("Name") == "all")
-							{
-								modState.at(stateNum)["all_behaviors"][var]["TakeDamage"].call(InstanceID, AttackDamage);
-							}
+							modState.at(stateNum)["all_behaviors"][var]["TakeDamage"].call(InstanceID, AttackDamage);
 						}
 					}
 				}
@@ -393,13 +368,12 @@ void DatabaseLoader::GMHooks::FloorData(FWCodeEvent& FunctionContext)
 
 		RValue objectIndex = g_YYTKInterface->CallBuiltin("variable_instance_get", { Instance, "object_index" });
 
-		string CustomDataString = "";
-
-		bool is_custom = false;
+		string InstanceName = "";
 		if (g_YYTKInterface->CallBuiltin("variable_instance_exists", { Instance, "myr_CustomName" }).ToBoolean())
 		{
-			is_custom = true;
-			CustomDataString = g_YYTKInterface->CallBuiltin("variable_instance_get", { Instance, "myr_CustomName" }).ToString();
+			InstanceName = g_YYTKInterface->CallBuiltin("variable_instance_get", { Instance, "myr_CustomName" }).ToString();
+		} else {
+			InstanceName = g_YYTKInterface->CallBuiltin("object_get_name", { objectIndex }).ToString();
 		}
 
 		RValue floordsmap = g_YYTKInterface->CallBuiltin("ds_map_create", {});
@@ -562,58 +536,28 @@ void DatabaseLoader::GMHooks::FloorData(FWCodeEvent& FunctionContext)
 				}
 
 			}
-			if (is_custom)
-			{
-				if (stateNum["all_behaviors"])
-				{
-					sol::table count = stateNum["all_behaviors"];
-					for (double var = 0; var < count.size() + 1; var++)
-					{
-						sol::table tbl = stateNum["all_behaviors"][var];
-						if (stateNum["all_behaviors"][var])
-						{
-							if (tbl.get<string>("Name") == CustomDataString || tbl.get<string>("Name") == "all")
-							{
-								if (tbl.get<string>("DataType") == "floormap")
-								{
-									if ((string)Code->GetName() == (string)"gml_Object_obj_room_Create_0")
-									{
-										stateNum["all_behaviors"][var]["Create"].call(InstanceID);
-									}
 
+			if (stateNum["all_behaviors"])
+			{
+				sol::table count = stateNum["all_behaviors"];
+				for (double var = 0; var < count.size() + 1; var++)
+				{
+					sol::table tbl = stateNum["all_behaviors"][var];
+					if (stateNum["all_behaviors"][var])
+					{
+						if (tbl.get<string>("DataType") == "floormap")
+						{
+							if (tbl.get<string>("Name") == InstanceName || tbl.get<string>("Name") == "all")
+							{
+								if ((string)Code->GetName() == (string)"gml_Object_obj_room_Create_0")
+								{
+									stateNum["all_behaviors"][var]["Create"].call(InstanceID);
 								}
 							}
 						}
 					}
 				}
 			}
-			else
-			{
-
-				if (stateNum["all_behaviors"])
-				{
-					sol::table count = stateNum["all_behaviors"];
-					for (double var = 0; var < count.size() + 1; var++)
-					{
-						sol::table tbl = stateNum["all_behaviors"][var];
-						if (stateNum["all_behaviors"][var])
-						{
-							if (tbl.get<string>("DataType") == "floormap")
-							{
-								if (tbl.get<string>("Name") == g_YYTKInterface->CallBuiltin("object_get_name", { objectIndex }).ToString()
-									|| tbl.get<string>("Name") == "all")
-								{
-									if ((string)Code->GetName() == (string)"gml_Object_obj_room_Create_0")
-									{
-										stateNum["all_behaviors"][var]["Create"].call(InstanceID);
-									}
-								}
-							}
-						}
-					}
-				}
-			}
-			
 		}
 	}
 }
@@ -664,7 +608,6 @@ void DatabaseLoader::GMHooks::EnemyData(FWCodeEvent& FunctionContext)
 
 		RValue objectIndex = g_YYTKInterface->CallBuiltin("variable_instance_get", { Instance, "object_index" });
 
-		string CustomDataString = "";
 
 		for (size_t stateNum = 0; stateNum < modState.size(); stateNum++)
 		{
@@ -689,11 +632,14 @@ void DatabaseLoader::GMHooks::EnemyData(FWCodeEvent& FunctionContext)
 			}
 		}
 
+		string InstanceName = "";
 		bool is_custom = false;
 		if (g_YYTKInterface->CallBuiltin("variable_instance_exists", { Instance, "myr_CustomName" }).ToBoolean())
 		{
 			is_custom = true;
-			CustomDataString = g_YYTKInterface->CallBuiltin("variable_instance_get", { Instance, "myr_CustomName" }).ToString();
+			InstanceName = g_YYTKInterface->CallBuiltin("variable_instance_get", { Instance, "myr_CustomName" }).ToString();
+		} else {
+			InstanceName = g_YYTKInterface->CallBuiltin("object_get_name", { objectIndex }).ToString();
 		}
 
 		for (int stateNum = 0; stateNum < modState.size(); stateNum++)
@@ -710,7 +656,7 @@ void DatabaseLoader::GMHooks::EnemyData(FWCodeEvent& FunctionContext)
 							// (run exclusively from obj_boss_intro_template)
 							if ((string)Code->GetName() == (string)"gml_Object_obj_boss_intro_template_Draw_0")
 							{
-								if (tbl.get<string>("Name") == CustomDataString)
+								if (tbl.get<string>("Name") == InstanceName)
 								{
 									g_YYTKInterface->CallBuiltin("variable_instance_set", { InstanceID, "timer", 0 });
 									g_YYTKInterface->CallBuiltin("variable_instance_set", { InstanceID, "depth", 100000 });
@@ -769,36 +715,36 @@ void DatabaseLoader::GMHooks::EnemyData(FWCodeEvent& FunctionContext)
 						}
 				}
 			}
-			if (is_custom)
+			if (modState.at(stateNum)["all_behaviors"])
 			{
-				if (modState.at(stateNum)["all_behaviors"])
+				sol::table count = modState.at(stateNum)["all_behaviors"];
+				for (double var = 0; var < count.size() + 1; var++)
 				{
-					sol::table count = modState.at(stateNum)["all_behaviors"];
-					for (double var = 0; var < count.size() + 1; var++)
+					sol::table tbl = modState.at(stateNum)["all_behaviors"][var];
+					if (modState.at(stateNum)["all_behaviors"][var])
 					{
-						sol::table tbl = modState.at(stateNum)["all_behaviors"][var];
-						if (modState.at(stateNum)["all_behaviors"][var])
+						if (tbl.get<string>("Name") == InstanceName || tbl.get<string>("Name") == "all")
 						{
-							if (tbl.get<string>("Name") == CustomDataString || tbl.get<string>("Name") == "all")
+							// Enemy scripts
+							if (tbl.get<string>("DataType") == "enemy")
 							{
-								// Enemy scripts
-								if (tbl.get<string>("DataType") == "enemy")
+								// Create script
+								if ((string)Code->GetName() == (string)"gml_Object_obj_enemy_Create_0")
 								{
-									// Create script
-									if ((string)Code->GetName() == (string)"gml_Object_obj_enemy_Create_0")
-									{
-										modState.at(stateNum)["all_behaviors"][var]["Create"].call(InstanceID);
-									}
-									// Destroy script
-									if ((string)Code->GetName() == (string)"gml_Object_obj_enemy_Destroy_0")
-									{
-										modState.at(stateNum)["all_behaviors"][var]["Destroy"].call(InstanceID);
-									}
-									// Draw script
-									if ((string)Code->GetName() == (string)"gml_Object_obj_enemy_Draw_0")
-									{
-										modState.at(stateNum)["all_behaviors"][var]["Draw"].call(InstanceID);
-									}
+									modState.at(stateNum)["all_behaviors"][var]["Create"].call(InstanceID);
+								}
+								// Destroy script
+								if ((string)Code->GetName() == (string)"gml_Object_obj_enemy_Destroy_0")
+								{
+									modState.at(stateNum)["all_behaviors"][var]["Destroy"].call(InstanceID);
+								}
+								// Draw script
+								if ((string)Code->GetName() == (string)"gml_Object_obj_enemy_Draw_0")
+								{
+									modState.at(stateNum)["all_behaviors"][var]["Draw"].call(InstanceID);
+								}
+								if (is_custom) //Why ? not sure, maybe someone forgot to update the code when it was duplicated, keeping the behavior to be safe
+								{
 									// Step script
 									if ((string)Code->GetName() == (string)"gml_Object_obj_swarmer_Step_0")
 									{
@@ -837,62 +783,6 @@ void DatabaseLoader::GMHooks::EnemyData(FWCodeEvent& FunctionContext)
 										}
 									}
 								}
-								// Projectile scripts
-								if (tbl.get<string>("DataType") == "projectile")
-								{
-									// Create script
-									if ((string)Code->GetName() == (string)"gml_Object_obj_bullet_type_Create_0")
-									{
-										modState.at(stateNum)["all_behaviors"][var]["Create"].call(InstanceID);
-									}
-									// Step script
-									if ((string)Code->GetName() == (string)"gml_Object_obj_bullet_type_Step_0")
-									{
-										modState.at(stateNum)["all_behaviors"][var]["Step"].call(InstanceID);
-									}
-									// Collide script
-									if ((string)Code->GetName() == (string)"gml_Object_obj_bullet_type_Collision_obj_floor")
-									{
-										modState.at(stateNum)["all_behaviors"][var]["CollideWith"].call(InstanceID, OtherInstanceID);
-									}
-								}
-							}
-						}
-					}
-				}
-			}
-			else
-			{
-				if (modState.at(stateNum)["all_behaviors"])
-				{
-					sol::table count = modState.at(stateNum)["all_behaviors"];
-					for (double var = 0; var < count.size() + 1; var++)
-					{
-						sol::table tbl = modState.at(stateNum)["all_behaviors"][var];
-						if (modState.at(stateNum)["all_behaviors"][var])
-						{
-							// Enemy scripts
-							if (tbl.get<string>("DataType") == "enemy")
-							{
-								if (tbl.get<string>("Name") == g_YYTKInterface->CallBuiltin("object_get_name", { objectIndex }).ToString()
-									|| tbl.get<string>("Name") == "all")
-								{
-									// Create script
-									if ((string)Code->GetName() == (string)"gml_Object_obj_enemy_Create_0")
-									{
-										modState.at(stateNum)["all_behaviors"][var]["Create"].call(InstanceID);
-									}
-									// Destroy script
-									if ((string)Code->GetName() == (string)"gml_Object_obj_enemy_Destroy_0")
-									{
-										modState.at(stateNum)["all_behaviors"][var]["Destroy"].call(InstanceID);
-									}
-									// Draw script
-									if ((string)Code->GetName() == (string)"gml_Object_obj_enemy_Draw_0")
-									{
-										modState.at(stateNum)["all_behaviors"][var]["Draw"].call(InstanceID);
-									}
-								}
 							}
 							// Projectile scripts
 							if (tbl.get<string>("DataType") == "projectile")
@@ -910,7 +800,7 @@ void DatabaseLoader::GMHooks::EnemyData(FWCodeEvent& FunctionContext)
 								// Collide script
 								if ((string)Code->GetName() == (string)"gml_Object_obj_bullet_type_Collision_obj_floor")
 								{
-									modState.at(stateNum)["all_behaviors"][var]["Collide"].call(InstanceID, OtherInstanceID);
+									modState.at(stateNum)["all_behaviors"][var]["CollideWith"].call(InstanceID, OtherInstanceID);
 								}
 							}
 							// Global scripts
@@ -964,64 +854,41 @@ void DatabaseLoader::GMHooks::CartridgeData(FWCodeEvent& FunctionContext) {
 
 		RValue objectIndex = g_YYTKInterface->CallBuiltin("variable_instance_get", { Instance, "object_index" });
 
-		string CustomDataString = "";
+		string InstanceName = "";
+
 
 		bool is_custom = false;
 		if (g_YYTKInterface->CallBuiltin("variable_instance_exists", { Instance, "myr_CustomName" }).ToBoolean())
 		{
 			is_custom = true;
-			CustomDataString = g_YYTKInterface->CallBuiltin("variable_instance_get", { Instance, "myr_CustomName" }).ToString();
+			InstanceName = g_YYTKInterface->CallBuiltin("variable_instance_get", { Instance, "myr_CustomName" }).ToString();
+		} else {
+			InstanceName = g_YYTKInterface->CallBuiltin("object_get_name", { objectIndex }).ToString();
 		}
 
 		for (int stateNum = 0; stateNum < modState.size(); stateNum++)
 		{
 			sol::table count = modState.at(stateNum)["all_behaviors"];
 
-			if (is_custom)
+			if (modState.at(stateNum)["all_behaviors"])
 			{
-				if (modState.at(stateNum)["all_behaviors"])
+				sol::table count = modState.at(stateNum)["all_behaviors"];
+				for (double var = 0; var < count.size() + 1; var++)
 				{
-					sol::table count = modState.at(stateNum)["all_behaviors"];
-					for (double var = 0; var < count.size() + 1; var++)
-					{
+					if (is_custom) { // this does not look right, the name of the cart should be pushed when it is registered not on every frame !
 						g_YYTKInterface->CallBuiltin("array_push", { GMWrappers::GetGlobal("cart_name"), modState.at(stateNum)["all_behaviors"][var]["ShownName"] });
 						g_YYTKInterface->CallBuiltin("array_push", { GMWrappers::GetGlobal("cart_desc"), modState.at(stateNum)["all_behaviors"][var]["Description"] });
-						sol::table tbl = modState.at(stateNum)["all_behaviors"][var];
-						if (modState.at(stateNum)["all_behaviors"][var])
-						{
-							if (tbl.get<string>("Name") == CustomDataString || tbl.get<string>("Name") == "all")
-							{
-								if (tbl.get<string>("DataType") == "cartridge")
-								{
-									if ((string)Code->GetName() == (string)"gml_Object_obj_cartridge_Create_0")
-									{
-										modState.at(stateNum)["all_behaviors"][var]["Create"].call(InstanceID);
-									}
-								}
-							}
-						}
 					}
-				}
-			}
-			else
-			{
-				if (modState.at(stateNum)["all_behaviors"])
-				{
-					sol::table count = modState.at(stateNum)["all_behaviors"];
-					for (double var = 0; var < count.size() + 1; var++)
+					sol::table tbl = modState.at(stateNum)["all_behaviors"][var];
+					if (modState.at(stateNum)["all_behaviors"][var])
 					{
-						sol::table tbl = modState.at(stateNum)["all_behaviors"][var];
-						if (modState.at(stateNum)["all_behaviors"][var])
+						if (tbl.get<string>("Name") == InstanceName|| tbl.get<string>("Name") == "all")
 						{
-							if (tbl.get<string>("Name") == g_YYTKInterface->CallBuiltin("object_get_name", { objectIndex }).ToString()
-								|| tbl.get<string>("Name") == "all")
+							if (tbl.get<string>("DataType") == "cartridge")
 							{
-								if (tbl.get<string>("DataType") == "cartridge")
+								if ((string)Code->GetName() == (string)"gml_Object_obj_cartridge_Create_0")
 								{
-									if ((string)Code->GetName() == (string)"gml_Object_obj_cartridge_Create_0")
-									{
-										modState.at(stateNum)["all_behaviors"][var]["Create"].call(InstanceID);
-									}
+									modState.at(stateNum)["all_behaviors"][var]["Create"].call(InstanceID);
 								}
 							}
 						}
