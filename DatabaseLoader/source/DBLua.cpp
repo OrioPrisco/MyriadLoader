@@ -150,13 +150,7 @@ void DatabaseLoader::DBLua::InvokeWithObjectIndex(string Object, sol::protected_
 			}
 		);
 
-		sol::protected_function_result result = func.call(g_YYTKInterface->CallBuiltin("variable_instance_get", { instance, "id" }).ToDouble());
-		if (!result.valid())
-		{
-			sol::error error = result;
-
-			g_YYTKInterface->PrintWarning("LUA ERROR: " + (string)error.what());
-		}
+		func.call(g_YYTKInterface->CallBuiltin("variable_instance_get", { instance, "id" }).ToDouble());
 	}
 }
 void DatabaseLoader::DBLua::InvokeWithCustomData(string Name, sol::protected_function func)
@@ -185,12 +179,7 @@ void DatabaseLoader::DBLua::InvokeWithCustomData(string Name, sol::protected_fun
 		{
 			if (g_YYTKInterface->CallBuiltin("variable_instance_get", { instance, "myr_CustomName" }).ToString() == Name)
 			{
-				sol::protected_function_result result = func.call(g_YYTKInterface->CallBuiltin("variable_instance_get", { instance, "id" }).ToDouble());
-				if (!result.valid())
-				{
-					sol::error error = result;
-					g_YYTKInterface->PrintWarning("LUA ERROR: " + (string)error.what());
-				}
+				func.call(g_YYTKInterface->CallBuiltin("variable_instance_get", { instance, "id" }).ToDouble());
 			}
 		}
 	}
@@ -734,26 +723,14 @@ double DatabaseLoader::DBLua::SpawnEnemy(double x, double y, string name)
 						{
 							if (tbl.get<string>("Name") == name)
 							{
-								sol::protected_function_result result = modState.at(stateNum)["all_behaviors"][var]["Create"].call(g_YYTKInterface->CallBuiltin("variable_instance_get", { enemy, "id" }).ToDouble());
-								if (!result.valid())
-								{
-									sol::error error = result;
-
-									g_YYTKInterface->PrintWarning("LUA ERROR: " + (string)error.what());
-								}
+								modState.at(stateNum)["all_behaviors"][var]["Create"].call(g_YYTKInterface->CallBuiltin("variable_instance_get", { enemy, "id" }).ToDouble());
 							}
 						}
 						if (tbl.get<string>("DataType") == "cartridge")
 						{
 							if (tbl.get<string>("Name") == name)
 							{
-								sol::protected_function_result result = modState.at(stateNum)["all_behaviors"][var]["Create"].call(g_YYTKInterface->CallBuiltin("variable_instance_get", { enemy, "id" }).ToDouble());
-								if (!result.valid())
-								{
-									sol::error error = result;
-
-									g_YYTKInterface->PrintWarning("LUA ERROR: " + (string)error.what());
-								}
+								modState.at(stateNum)["all_behaviors"][var]["Create"].call(g_YYTKInterface->CallBuiltin("variable_instance_get", { enemy, "id" }).ToDouble());
 							}
 						}
 					}

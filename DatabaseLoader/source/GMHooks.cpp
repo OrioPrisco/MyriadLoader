@@ -147,13 +147,7 @@ RValue& DatabaseLoader::GMHooks::EnemyDamage(IN CInstance* Self, IN CInstance* O
 						{
 							if (tbl.get<string>("Name") == CustomDataString.ToString() || tbl.get<string>("Name") == "all")
 							{
-								sol::protected_function_result result = modState.at(stateNum)["all_behaviors"][var]["TakeDamage"].call(InstanceID, AttackDamage);
-								if (!result.valid())
-								{
-									sol::error error = result;
-
-									g_YYTKInterface->PrintWarning("LUA ERROR: " + (string)error.what());
-								}
+								modState.at(stateNum)["all_behaviors"][var]["TakeDamage"].call(InstanceID, AttackDamage);
 							}
 						}
 					}
@@ -174,13 +168,7 @@ RValue& DatabaseLoader::GMHooks::EnemyDamage(IN CInstance* Self, IN CInstance* O
 						{
 							if (tbl.get<string>("Name") == ObjectIndexString.ToString() || tbl.get<string>("Name") == "all")
 							{
-								sol::protected_function_result result = modState.at(stateNum)["all_behaviors"][var]["TakeDamage"].call(InstanceID, AttackDamage);
-								if (!result.valid())
-								{
-									sol::error error = result;
-
-									g_YYTKInterface->PrintWarning("LUA ERROR: " + (string)error.what());
-								}
+								modState.at(stateNum)["all_behaviors"][var]["TakeDamage"].call(InstanceID, AttackDamage);
 							}
 						}
 					}
@@ -217,13 +205,7 @@ RValue& DatabaseLoader::GMHooks::PlayerTakeHit(IN CInstance* Self, IN CInstance*
 
 						if (ImmuneFrames.ToDouble() <= 0)
 						{
-							sol::protected_function_result result = modState.at(stateNum)["all_behaviors"][var]["TakeDamage"].call(InstanceID, AttackDamage);
-							if (!result.valid())
-							{
-								sol::error error = result;
-
-								g_YYTKInterface->PrintWarning("LUA ERROR: " + (string)error.what());
-							}
+							modState.at(stateNum)["all_behaviors"][var]["TakeDamage"].call(InstanceID, AttackDamage);
 						}
 					}
 				}
@@ -495,13 +477,7 @@ void DatabaseLoader::GMHooks::FloorData(FWCodeEvent& FunctionContext)
 							{
 
 								sol::protected_function_result result = stateNum["all_behaviors"][var]["ShouldForceFloor"].call();
-								if (!result.valid())
-								{
-									sol::error error = result;
-
-									g_YYTKInterface->PrintWarning("LUA ERROR: " + (string)error.what());
-								}
-								else if (result.get<bool>())
+								if (result.valid() && result.get<bool>())
 								{
 									shouldQueueCustom = true;
 									sol::table tbl = stateNum["all_behaviors"][var];
@@ -602,13 +578,7 @@ void DatabaseLoader::GMHooks::FloorData(FWCodeEvent& FunctionContext)
 								{
 									if ((string)Code->GetName() == (string)"gml_Object_obj_room_Create_0")
 									{
-										sol::protected_function_result result = stateNum["all_behaviors"][var]["Create"].call(InstanceID);
-										if (!result.valid())
-										{
-											sol::error error = result;
-
-											g_YYTKInterface->PrintWarning("LUA ERROR: " + (string)error.what());
-										}
+										stateNum["all_behaviors"][var]["Create"].call(InstanceID);
 									}
 
 								}
@@ -635,14 +605,7 @@ void DatabaseLoader::GMHooks::FloorData(FWCodeEvent& FunctionContext)
 								{
 									if ((string)Code->GetName() == (string)"gml_Object_obj_room_Create_0")
 									{
-										sol::protected_function_result result = stateNum["all_behaviors"][var]["Create"].call(InstanceID);
-										g_YYTKInterface->PrintWarning("result");
-										if (!result.valid())
-										{
-											sol::error error = result;
-
-											g_YYTKInterface->PrintWarning("LUA ERROR: " + (string)error.what());
-										}
+										stateNum["all_behaviors"][var]["Create"].call(InstanceID);
 									}
 								}
 							}
@@ -751,23 +714,11 @@ void DatabaseLoader::GMHooks::EnemyData(FWCodeEvent& FunctionContext)
 								{
 									g_YYTKInterface->CallBuiltin("variable_instance_set", { InstanceID, "timer", 0 });
 									g_YYTKInterface->CallBuiltin("variable_instance_set", { InstanceID, "depth", 100000 });
-									sol::protected_function_result result2 = modState.at(stateNum)["all_behaviors"][var]["BossIntro"].call(InstanceID);
-									if (!result2.valid())
-									{
-										sol::error error = result2;
-
-										g_YYTKInterface->PrintWarning("LUA ERROR: " + (string)error.what());
-									}
+									modState.at(stateNum)["all_behaviors"][var]["BossIntro"].call(InstanceID);
 									g_YYTKInterface->CallBuiltin("gpu_set_zwriteenable", { true });
 									g_YYTKInterface->CallBuiltin("gpu_set_ztestenable", { true });
 									g_YYTKInterface->CallBuiltin("gpu_set_depth", { 100000 });
-									sol::protected_function_result result = modState.at(stateNum)["all_behaviors"][var]["BossBackground"].call(InstanceID);
-									if (!result.valid())
-									{
-										sol::error error = result;
-
-										g_YYTKInterface->PrintWarning("LUA ERROR: " + (string)error.what());
-									}
+									modState.at(stateNum)["all_behaviors"][var]["BossBackground"].call(InstanceID);
 									if (g_YYTKInterface->CallBuiltin("instance_exists", { g_YYTKInterface->CallBuiltin("asset_get_index", {"obj_boss_template"}) }).ToBoolean())
 									{
 										g_YYTKInterface->CallBuiltin("variable_instance_set", { InstanceID, "myr_bossActive", true });
@@ -788,13 +739,7 @@ void DatabaseLoader::GMHooks::EnemyData(FWCodeEvent& FunctionContext)
 									if (modState.at(stateNum)["all_behaviors"][var]["Boss"] == true)
 									{
 										sol::protected_function_result result = modState.at(stateNum)["all_behaviors"][var]["ShouldForceBoss"].call();
-										if (!result.valid())
-										{
-											sol::error error = result;
-
-											g_YYTKInterface->PrintWarning("LUA ERROR: " + (string)error.what());
-										}
-										else if (result.get<bool>())
+										if (result.valid() && result.get<bool>())
 										{
 											shouldSpawnCustom = true;
 											sol::table tbl = modState.at(stateNum)["all_behaviors"][var];
@@ -842,59 +787,29 @@ void DatabaseLoader::GMHooks::EnemyData(FWCodeEvent& FunctionContext)
 									// Create script
 									if ((string)Code->GetName() == (string)"gml_Object_obj_enemy_Create_0")
 									{
-										sol::protected_function_result result = modState.at(stateNum)["all_behaviors"][var]["Create"].call(InstanceID);
-										if (!result.valid())
-										{
-											sol::error error = result;
-
-											g_YYTKInterface->PrintWarning("LUA ERROR: " + (string)error.what());
-										}
+										modState.at(stateNum)["all_behaviors"][var]["Create"].call(InstanceID);
 									}
 									// Destroy script
 									if ((string)Code->GetName() == (string)"gml_Object_obj_enemy_Destroy_0")
 									{
-										sol::protected_function_result result = modState.at(stateNum)["all_behaviors"][var]["Destroy"].call(InstanceID);
-										if (!result.valid())
-										{
-											sol::error error = result;
-
-											g_YYTKInterface->PrintWarning("LUA ERROR: " + (string)error.what());
-										}
+										modState.at(stateNum)["all_behaviors"][var]["Destroy"].call(InstanceID);
 									}
 									// Draw script
 									if ((string)Code->GetName() == (string)"gml_Object_obj_enemy_Draw_0")
 									{
-										sol::protected_function_result result = modState.at(stateNum)["all_behaviors"][var]["Draw"].call(InstanceID);
-										if (!result.valid())
-										{
-											sol::error error = result;
-
-											g_YYTKInterface->PrintWarning("LUA ERROR: " + (string)error.what());
-										}
+										modState.at(stateNum)["all_behaviors"][var]["Draw"].call(InstanceID);
 									}
 									// Step script
 									if ((string)Code->GetName() == (string)"gml_Object_obj_swarmer_Step_0")
 									{
-										sol::protected_function_result result = modState.at(stateNum)["all_behaviors"][var]["Step"].call(InstanceID);
-										if (!result.valid())
-										{
-											sol::error error = result;
-
-											g_YYTKInterface->PrintWarning("LUA ERROR: " + (string)error.what());
-										}
+										modState.at(stateNum)["all_behaviors"][var]["Step"].call(InstanceID);
 									}
 									// Miniboss step script
 									if ((string)Code->GetName() == (string)"gml_Object_obj_miniboss_template_Step_0")
 									{
 										if (tbl.get<bool>("Miniboss") == true)
 										{
-											sol::protected_function_result result = modState.at(stateNum)["all_behaviors"][var]["Step"].call(InstanceID);
-											if (!result.valid())
-											{
-												sol::error error = result;
-
-												g_YYTKInterface->PrintWarning("LUA ERROR: " + (string)error.what());
-											}
+											modState.at(stateNum)["all_behaviors"][var]["Step"].call(InstanceID);
 										}
 									}
 									// Miniboss draw script
@@ -902,13 +817,7 @@ void DatabaseLoader::GMHooks::EnemyData(FWCodeEvent& FunctionContext)
 									{
 										if (tbl.get<bool>("Miniboss") == true)
 										{
-											sol::protected_function_result result = modState.at(stateNum)["all_behaviors"][var]["Draw"].call(InstanceID);
-											if (!result.valid())
-											{
-												sol::error error = result;
-
-												g_YYTKInterface->PrintWarning("LUA ERROR: " + (string)error.what());
-											}
+											modState.at(stateNum)["all_behaviors"][var]["Draw"].call(InstanceID);
 										}
 									}
 									// Boss step script
@@ -916,13 +825,7 @@ void DatabaseLoader::GMHooks::EnemyData(FWCodeEvent& FunctionContext)
 									{
 										if (tbl.get<bool>("Boss") == true)
 										{
-											sol::protected_function_result result = modState.at(stateNum)["all_behaviors"][var]["Step"].call(InstanceID);
-											if (!result.valid())
-											{
-												sol::error error = result;
-
-												g_YYTKInterface->PrintWarning("LUA ERROR: " + (string)error.what());
-											}
+											modState.at(stateNum)["all_behaviors"][var]["Step"].call(InstanceID);
 										}
 									}
 									// Boss draw script
@@ -930,13 +833,7 @@ void DatabaseLoader::GMHooks::EnemyData(FWCodeEvent& FunctionContext)
 									{
 										if (tbl.get<bool>("Boss") == true)
 										{
-											sol::protected_function_result result = modState.at(stateNum)["all_behaviors"][var]["Draw"].call(InstanceID);
-											if (!result.valid())
-											{
-												sol::error error = result;
-
-												g_YYTKInterface->PrintWarning("LUA ERROR: " + (string)error.what());
-											}
+											modState.at(stateNum)["all_behaviors"][var]["Draw"].call(InstanceID);
 										}
 									}
 								}
@@ -946,35 +843,17 @@ void DatabaseLoader::GMHooks::EnemyData(FWCodeEvent& FunctionContext)
 									// Create script
 									if ((string)Code->GetName() == (string)"gml_Object_obj_bullet_type_Create_0")
 									{
-										sol::protected_function_result result = modState.at(stateNum)["all_behaviors"][var]["Create"].call(InstanceID);
-										if (!result.valid())
-										{
-											sol::error error = result;
-
-											g_YYTKInterface->PrintWarning("LUA ERROR: " + (string)error.what());
-										}
+										modState.at(stateNum)["all_behaviors"][var]["Create"].call(InstanceID);
 									}
 									// Step script
 									if ((string)Code->GetName() == (string)"gml_Object_obj_bullet_type_Step_0")
 									{
-										sol::protected_function_result result = modState.at(stateNum)["all_behaviors"][var]["Step"].call(InstanceID);
-										if (!result.valid())
-										{
-											sol::error error = result;
-
-											g_YYTKInterface->PrintWarning("LUA ERROR: " + (string)error.what());
-										}
+										modState.at(stateNum)["all_behaviors"][var]["Step"].call(InstanceID);
 									}
 									// Collide script
 									if ((string)Code->GetName() == (string)"gml_Object_obj_bullet_type_Collision_obj_floor")
 									{
-										sol::protected_function_result result = modState.at(stateNum)["all_behaviors"][var]["CollideWith"].call(InstanceID, OtherInstanceID);
-										if (!result.valid())
-										{
-											sol::error error = result;
-
-											g_YYTKInterface->PrintWarning("LUA ERROR: " + (string)error.what());
-										}
+										modState.at(stateNum)["all_behaviors"][var]["CollideWith"].call(InstanceID, OtherInstanceID);
 									}
 								}
 							}
@@ -1001,35 +880,17 @@ void DatabaseLoader::GMHooks::EnemyData(FWCodeEvent& FunctionContext)
 									// Create script
 									if ((string)Code->GetName() == (string)"gml_Object_obj_enemy_Create_0")
 									{
-										sol::protected_function_result result = modState.at(stateNum)["all_behaviors"][var]["Create"].call(InstanceID);
-										if (!result.valid())
-										{
-											sol::error error = result;
-
-											g_YYTKInterface->PrintWarning("LUA ERROR: " + (string)error.what());
-										}
+										modState.at(stateNum)["all_behaviors"][var]["Create"].call(InstanceID);
 									}
 									// Destroy script
 									if ((string)Code->GetName() == (string)"gml_Object_obj_enemy_Destroy_0")
 									{
-										sol::protected_function_result result = modState.at(stateNum)["all_behaviors"][var]["Destroy"].call(InstanceID);
-										if (!result.valid())
-										{
-											sol::error error = result;
-
-											g_YYTKInterface->PrintWarning("LUA ERROR: " + (string)error.what());
-										}
+										modState.at(stateNum)["all_behaviors"][var]["Destroy"].call(InstanceID);
 									}
 									// Draw script
 									if ((string)Code->GetName() == (string)"gml_Object_obj_enemy_Draw_0")
 									{
-										sol::protected_function_result result = modState.at(stateNum)["all_behaviors"][var]["Draw"].call(InstanceID);
-										if (!result.valid())
-										{
-											sol::error error = result;
-
-											g_YYTKInterface->PrintWarning("LUA ERROR: " + (string)error.what());
-										}
+										modState.at(stateNum)["all_behaviors"][var]["Draw"].call(InstanceID);
 									}
 								}
 							}
@@ -1039,35 +900,17 @@ void DatabaseLoader::GMHooks::EnemyData(FWCodeEvent& FunctionContext)
 								// Create script
 								if ((string)Code->GetName() == (string)"gml_Object_obj_bullet_type_Create_0")
 								{
-									sol::protected_function_result result = modState.at(stateNum)["all_behaviors"][var]["Create"].call(InstanceID);
-									if (!result.valid())
-									{
-										sol::error error = result;
-
-										g_YYTKInterface->PrintWarning("LUA ERROR: " + (string)error.what());
-									}
+									modState.at(stateNum)["all_behaviors"][var]["Create"].call(InstanceID);
 								}
 								// Step script
 								if ((string)Code->GetName() == (string)"gml_Object_obj_bullet_type_Step_0")
 								{
-									sol::protected_function_result result = modState.at(stateNum)["all_behaviors"][var]["Step"].call(InstanceID);
-									if (!result.valid())
-									{
-										sol::error error = result;
-
-										g_YYTKInterface->PrintWarning("LUA ERROR: " + (string)error.what());
-									}
+									modState.at(stateNum)["all_behaviors"][var]["Step"].call(InstanceID);
 								}
 								// Collide script
 								if ((string)Code->GetName() == (string)"gml_Object_obj_bullet_type_Collision_obj_floor")
 								{
-									sol::protected_function_result result = modState.at(stateNum)["all_behaviors"][var]["Collide"].call(InstanceID, OtherInstanceID);
-									if (!result.valid())
-									{
-										sol::error error = result;
-
-										g_YYTKInterface->PrintWarning("LUA ERROR: " + (string)error.what());
-									}
+									modState.at(stateNum)["all_behaviors"][var]["Collide"].call(InstanceID, OtherInstanceID);
 								}
 							}
 							// Global scripts
@@ -1076,24 +919,12 @@ void DatabaseLoader::GMHooks::EnemyData(FWCodeEvent& FunctionContext)
 								// DrawUI script
 								if ((string)Code->GetName() == (string)"gml_Object_obj_view_Draw_73")
 								{
-									sol::protected_function_result result = modState.at(stateNum)["all_behaviors"][var]["DrawUI"].call();
-									if (!result.valid())
-									{
-										sol::error error = result;
-
-										g_YYTKInterface->PrintWarning("LUA ERROR: " + (string)error.what());
-									}
+									modState.at(stateNum)["all_behaviors"][var]["DrawUI"].call();
 								}
 								// Draw script
 								if ((string)Code->GetName() == (string)"gml_Object_obj_player_Draw_0")
 								{
-									sol::protected_function_result result = modState.at(stateNum)["all_behaviors"][var]["Draw"].call();
-									if (!result.valid())
-									{
-										sol::error error = result;
-
-										g_YYTKInterface->PrintWarning("LUA ERROR: " + (string)error.what());
-									}
+									modState.at(stateNum)["all_behaviors"][var]["Draw"].call();
 								}
 							}
 						}
@@ -1164,12 +995,7 @@ void DatabaseLoader::GMHooks::CartridgeData(FWCodeEvent& FunctionContext) {
 								{
 									if ((string)Code->GetName() == (string)"gml_Object_obj_cartridge_Create_0")
 									{
-										sol::protected_function_result result = modState.at(stateNum)["all_behaviors"][var]["Create"].call(InstanceID);
-										if (!result.valid())
-										{
-											sol::error error = result;
-											g_YYTKInterface->PrintWarning("LUA ERROR: " + (string)error.what());
-										}
+										modState.at(stateNum)["all_behaviors"][var]["Create"].call(InstanceID);
 									}
 								}
 							}
@@ -1194,12 +1020,7 @@ void DatabaseLoader::GMHooks::CartridgeData(FWCodeEvent& FunctionContext) {
 								{
 									if ((string)Code->GetName() == (string)"gml_Object_obj_cartridge_Create_0")
 									{
-										sol::protected_function_result result = modState.at(stateNum)["all_behaviors"][var]["Create"].call(InstanceID);
-										if (!result.valid())
-										{
-											sol::error error = result;
-											g_YYTKInterface->PrintWarning("LUA ERROR: " + (string)error.what());
-										}
+										modState.at(stateNum)["all_behaviors"][var]["Create"].call(InstanceID);
 									}
 								}
 							}
