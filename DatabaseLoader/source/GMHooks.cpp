@@ -358,201 +358,195 @@ void DatabaseLoader::GMHooks::FloorData(FWCodeEvent& FunctionContext)
 	CCode* Code = std::get<2>(FunctionContext.Arguments());
 
 	if (std::find(AllNames.begin(), AllNames.end(), Code->GetName()) != AllNames.end())
+		return;
+
+	CInstance* Self = std::get<0>(FunctionContext.Arguments());
+
+	RValue Instance = Self->ToRValue();
+
+	double InstanceID = g_YYTKInterface->CallBuiltin("variable_instance_get", { Instance, "id" }).ToDouble();
+
+	RValue objectIndex = g_YYTKInterface->CallBuiltin("variable_instance_get", { Instance, "object_index" });
+
+	string InstanceName = "";
+	if (g_YYTKInterface->CallBuiltin("variable_instance_exists", { Instance, "myr_CustomName" }).ToBoolean())
 	{
+		InstanceName = g_YYTKInterface->CallBuiltin("variable_instance_get", { Instance, "myr_CustomName" }).ToString();
+	} else {
+		InstanceName = g_YYTKInterface->CallBuiltin("object_get_name", { objectIndex }).ToString();
+	}
 
-		CInstance* Self = std::get<0>(FunctionContext.Arguments());
+	RValue floordsmap = g_YYTKInterface->CallBuiltin("ds_map_create", {});
+	g_YYTKInterface->CallBuiltin("ds_map_copy", { floordsmap, GMWrappers::GetGlobal("floormap_1") });
 
-		RValue Instance = Self->ToRValue();
 
-		double InstanceID = g_YYTKInterface->CallBuiltin("variable_instance_get", { Instance, "id" }).ToDouble();
-
-		RValue objectIndex = g_YYTKInterface->CallBuiltin("variable_instance_get", { Instance, "object_index" });
-
-		string InstanceName = "";
-		if (g_YYTKInterface->CallBuiltin("variable_instance_exists", { Instance, "myr_CustomName" }).ToBoolean())
+	for (auto& stateNum : modState)
+	{
+		sol::table count = stateNum["all_behaviors"];
+		for (int var = 1; var < count.size() + 1; var++)
 		{
-			InstanceName = g_YYTKInterface->CallBuiltin("variable_instance_get", { Instance, "myr_CustomName" }).ToString();
-		} else {
-			InstanceName = g_YYTKInterface->CallBuiltin("object_get_name", { objectIndex }).ToString();
-		}
+			sol::table tbl = stateNum["all_behaviors"][var];
 
-		RValue floordsmap = g_YYTKInterface->CallBuiltin("ds_map_create", {});
-		g_YYTKInterface->CallBuiltin("ds_map_copy", { floordsmap, GMWrappers::GetGlobal("floormap_1") });
+			string floorRooms = Files::GetModsDirectory() + tbl.get<string>("Rooms");
+			string floorRoomsDestiny = tbl.get<string>("RoomsDestination");
+			string roomsDirectory = "rooms/";
+			double music;
+
+			int id = Files::HashString(tbl.get<string>("Name"));
 
 
-		for (auto& stateNum : modState)
-		{
-			sol::table count = stateNum["all_behaviors"];
-			for (int var = 1; var < count.size() + 1; var++)
+			if (tbl.get<string>("DataType") != "floormap")
+				continue;
+
+			if (!g_YYTKInterface->CallBuiltin("variable_instance_exists", { Self, "has_pasted_blocks" }).ToBoolean())
 			{
-				sol::table tbl = stateNum["all_behaviors"][var];
+				g_YYTKInterface->CallBuiltin("bool", { Self, "has_pasted_blocks", true });
+			}
 
-				string floorRooms = Files::GetModsDirectory() + tbl.get<string>("Rooms");
-				string floorRoomsDestiny = tbl.get<string>("RoomsDestination");
-				string roomsDirectory = "rooms/";
-				double music;
+			if ((string)Code->GetName() == (string)"gml_Object_obj_nextlevel_Create_0")
+			{
+				static bool shouldQueueCustom = false;
+				static string customFloorName = "";
+				static int customFloorNumber = 0;
+				static string customFloorNumberFull = "";
+				string floorRoomsDirectoryDestiny = roomsDirectory.append(floorRoomsDestiny);
 
-				int id = Files::HashString(tbl.get<string>("Name"));
+				RValue roomsDestinyString = g_YYTKInterface->CallBuiltin("string", { (string_view)floorRoomsDirectoryDestiny });
+
+				ifstream src(floorRooms);
+				ofstream  dst(roomsDestinyString.ToString());
+				dst << src.rdbuf();
 
 
-				if (tbl.get<string>("DataType") == "floormap")
+				g_YYTKInterface->CallBuiltin("ds_map_set", { floordsmap, "index", id });
+
+				g_YYTKInterface->CallBuiltin("ds_map_replace", { floordsmap, "layout", roomsDestinyString });
+				g_YYTKInterface->CallBuiltin("ds_map_replace", { floordsmap, "music", music });
+
+
+
+
+				music = tbl.get<double>("Music");
+
+				double bossList = tbl.get<double>("BossList");
+				/*
+				if (bossList > 0 && g_YYTKInterface->CallBuiltin("ds_map_find_value", { GMWrappers::GetGlobal("current_floormap"), "index" }).ToDouble() == g_YYTKInterface->CallBuiltin("ds_map_find_value", { floordsmap, "index" }).ToDouble())
 				{
-					if (!g_YYTKInterface->CallBuiltin("variable_instance_exists", { Self, "has_pasted_blocks" }).ToBoolean())
-					{
-						g_YYTKInterface->CallBuiltin("bool", { Self, "has_pasted_blocks", true });
-					}
+					string bossListNum = "bosslist_" + to_string(tbl.get<int>("Floor"));
+					RValue bossListCopy = g_YYTKInterface->CallBuiltin("ds_list_copy", { bossListCopy, GMWrappers::GetGlobal(bossListNum) });
 
-					if ((string)Code->GetName() == (string)"gml_Object_obj_nextlevel_Create_0")
-					{
-						static bool shouldQueueCustom = false;
-						static string customFloorName = "";
-						static int customFloorNumber = 0;
-						static string customFloorNumberFull = "";
+					g_YYTKInterface->CallBuiltin("ds_list_clear", { GMWrappers::GetGlobal(bossListNum) });
+					g_YYTKInterface->CallBuiltin("ds_list_add", { GMWrappers::GetGlobal(bossListNum), bossList });
 
+					g_YYTKInterface->CallBuiltin("ds_map_replace", { floordsmap, "boss", (string_view)bossListNum });
+				}*/
 
-						string floorRoomsDirectoryDestiny = roomsDirectory.append(floorRoomsDestiny);
-
-						RValue roomsDestinyString = g_YYTKInterface->CallBuiltin("string", { (string_view)floorRoomsDirectoryDestiny });
-
-						//thank orio prisco for this
-						string* stringtogivetostarprov = new string(floorRoomsDestiny);
-
-						ifstream src(floorRooms);
-						ofstream  dst(roomsDestinyString.ToString());
-						dst << src.rdbuf();
-
-
-						g_YYTKInterface->CallBuiltin("ds_map_set", { floordsmap, "index", id });
-
-						g_YYTKInterface->CallBuiltin("ds_map_replace", { floordsmap, "layout", roomsDestinyString });
-						g_YYTKInterface->CallBuiltin("ds_map_replace", { floordsmap, "music", music });
-
-
-
-
-						music = tbl.get<double>("Music");
-
-						double bossList = tbl.get<double>("BossList");
-						/*
-						if (bossList > 0 && g_YYTKInterface->CallBuiltin("ds_map_find_value", { GMWrappers::GetGlobal("current_floormap"), "index" }).ToDouble() == g_YYTKInterface->CallBuiltin("ds_map_find_value", { floordsmap, "index" }).ToDouble())
-						{
-							string bossListNum = "bosslist_" + to_string(tbl.get<int>("Floor"));
-							RValue bossListCopy = g_YYTKInterface->CallBuiltin("ds_list_copy", { bossListCopy, GMWrappers::GetGlobal(bossListNum) });
-
-							g_YYTKInterface->CallBuiltin("ds_list_clear", { GMWrappers::GetGlobal(bossListNum) });
-							g_YYTKInterface->CallBuiltin("ds_list_add", { GMWrappers::GetGlobal(bossListNum), bossList });
-
-							g_YYTKInterface->CallBuiltin("ds_map_replace", { floordsmap, "boss", (string_view)bossListNum });
-						}*/
-
-						if (!FunctionContext.CalledOriginal())
-						{
-							if (stateNum["all_behaviors"][var]["Floor"] != 0)
-							{
-
-								sol::protected_function_result result = stateNum["all_behaviors"][var]["ShouldForceFloor"].call();
-								if (result.valid() && result.get<bool>())
-								{
-									shouldQueueCustom = true;
-									sol::table tbl = stateNum["all_behaviors"][var];
-									customFloorName = tbl.get<string>("Name");
-									customFloorNumber = tbl.get<int>("Floor");
-									customFloorNumberFull = "floormap_" + to_string(customFloorNumber - 1);
-								}
-							}
-
-						}
-						if (shouldQueueCustom)
-						{
-							g_YYTKInterface->CallBuiltin("array_set", { GMWrappers::GetGlobal("floormap_array"), id, floordsmap });
-							g_YYTKInterface->CallBuiltin("ds_map_set", { GMWrappers::GetGlobal(customFloorNumberFull), "next", id });
-							g_YYTKInterface->CallBuiltin("ds_map_set", { floordsmap, "next", customFloorNumber + 4 });
-							FunctionContext.Call();
-						}
-
-
-						if (FunctionContext.CalledOriginal())
-						{
-							if (shouldQueueCustom)
-							{
-								RValue nextFloor = g_YYTKInterface->CallBuiltin("instance_find", { g_YYTKInterface->CallBuiltin("asset_get_index", {"obj_floor"}), 0 });
-
-
-								g_YYTKInterface->CallBuiltin("variable_instance_set", { nextFloor, "myr_CustomName", (string_view)customFloorName });
-
-							}
-						}
-					}
-
-					if (g_YYTKInterface->CallBuiltin("ds_map_find_value", { GMWrappers::GetGlobal("current_floormap"), "index" }).ToDouble() == id)
+				if (!FunctionContext.CalledOriginal())
+				{
+					if (stateNum["all_behaviors"][var]["Floor"] != 0)
 					{
 
-						if ((string)Code->GetName() == (string)"gml_Object_obj_room_Create_0")
+						sol::protected_function_result result = stateNum["all_behaviors"][var]["ShouldForceFloor"].call();
+						if (result.valid() && result.get<bool>())
 						{
-							double floorMusic = tbl.get<double>("Music");
-
-
-							RValue roomAsset = g_YYTKInterface->CallBuiltin("asset_get_index", { "obj_room" });
-							double allRooms = g_YYTKInterface->CallBuiltin("instance_number", { roomAsset }).ToDouble() - 1;
-
-							GMWrappers::SetGlobal("current_music", floorMusic);
-
-							for (int i = 0; i < allRooms; i++)
-							{
-								g_YYTKInterface->CallBuiltin("variable_instance_set", { g_YYTKInterface->CallBuiltin("instance_find", {roomAsset, i}), "room_theme", floorMusic});
-							}
-							DBLua::DoMusic(floorMusic);
-							
-						}
-						
-						if ((string)Code->GetName() == (string)"gml_Object_obj_fakefloor_Create_0");
-						{
-							RValue roomAsset = g_YYTKInterface->CallBuiltin("asset_get_index", { "obj_fakefloor" });
-							double allRooms = g_YYTKInterface->CallBuiltin("instance_number", { roomAsset }).ToDouble() - 1;
-
-
-							for (int i = 0; i < allRooms; i++)
-							{
-								g_YYTKInterface->CallBuiltin("variable_instance_set", { g_YYTKInterface->CallBuiltin("instance_find", {roomAsset, i}), "sprite_index", tbl.get<double>("Tileset")});
-							}
-
-						}
-						if ((string)Code->GetName() == (string)"gml_Object_obj_floor_Create_0");
-						{
-							RValue roomAsset = g_YYTKInterface->CallBuiltin("asset_get_index", { "obj_floor" });
-							double allRooms = g_YYTKInterface->CallBuiltin("instance_number", { roomAsset }).ToDouble() - 1;
-
-							for (int i = 0; i < allRooms; i++)
-							{
-								if (!g_YYTKInterface->CallBuiltin("variable_instance_get", { Self, "has_pasted_blocks" }).ToBoolean() && g_YYTKInterface->CallBuiltin("variable_instance_get", {g_YYTKInterface->CallBuiltin("instance_find", {roomAsset, i}), "sprite_index"}).ToDouble() == 266)
-								{
-									g_YYTKInterface->CallBuiltin("variable_instance_set", { g_YYTKInterface->CallBuiltin("instance_find", {roomAsset, i}), "sprite_index", tbl.get<double>("Tileset") });
-								}
-							}
-							g_YYTKInterface->CallBuiltin("variable_instance_set", { Self, "has_pasted_blocks", true });
+							shouldQueueCustom = true;
+							sol::table tbl = stateNum["all_behaviors"][var];
+							customFloorName = tbl.get<string>("Name");
+							customFloorNumber = tbl.get<int>("Floor");
+							customFloorNumberFull = "floormap_" + to_string(customFloorNumber - 1);
 						}
 					}
 
 				}
+				if (shouldQueueCustom)
+				{
+					g_YYTKInterface->CallBuiltin("array_set", { GMWrappers::GetGlobal("floormap_array"), id, floordsmap });
+					g_YYTKInterface->CallBuiltin("ds_map_set", { GMWrappers::GetGlobal(customFloorNumberFull), "next", id });
+					g_YYTKInterface->CallBuiltin("ds_map_set", { floordsmap, "next", customFloorNumber + 4 });
+					FunctionContext.Call();
+				}
 
+
+				if (FunctionContext.CalledOriginal())
+				{
+					if (shouldQueueCustom)
+					{
+						RValue nextFloor = g_YYTKInterface->CallBuiltin("instance_find", { g_YYTKInterface->CallBuiltin("asset_get_index", {"obj_floor"}), 0 });
+
+
+						g_YYTKInterface->CallBuiltin("variable_instance_set", { nextFloor, "myr_CustomName", (string_view)customFloorName });
+
+					}
+				}
 			}
 
-			if (stateNum["all_behaviors"])
+			if (g_YYTKInterface->CallBuiltin("ds_map_find_value", { GMWrappers::GetGlobal("current_floormap"), "index" }).ToDouble() == id)
 			{
-				sol::table count = stateNum["all_behaviors"];
-				for (double var = 0; var < count.size() + 1; var++)
+
+				if ((string)Code->GetName() == (string)"gml_Object_obj_room_Create_0")
 				{
-					sol::table tbl = stateNum["all_behaviors"][var];
-					if (stateNum["all_behaviors"][var])
+					double floorMusic = tbl.get<double>("Music");
+
+
+					RValue roomAsset = g_YYTKInterface->CallBuiltin("asset_get_index", { "obj_room" });
+					double allRooms = g_YYTKInterface->CallBuiltin("instance_number", { roomAsset }).ToDouble() - 1;
+
+					GMWrappers::SetGlobal("current_music", floorMusic);
+
+					for (int i = 0; i < allRooms; i++)
 					{
-						if (tbl.get<string>("DataType") == "floormap")
+						g_YYTKInterface->CallBuiltin("variable_instance_set", { g_YYTKInterface->CallBuiltin("instance_find", {roomAsset, i}), "room_theme", floorMusic});
+					}
+					DBLua::DoMusic(floorMusic);
+
+				}
+
+				if ((string)Code->GetName() == (string)"gml_Object_obj_fakefloor_Create_0")
+				{
+					RValue roomAsset = g_YYTKInterface->CallBuiltin("asset_get_index", { "obj_fakefloor" });
+					double allRooms = g_YYTKInterface->CallBuiltin("instance_number", { roomAsset }).ToDouble() - 1;
+
+
+					for (int i = 0; i < allRooms; i++)
+					{
+						g_YYTKInterface->CallBuiltin("variable_instance_set", { g_YYTKInterface->CallBuiltin("instance_find", {roomAsset, i}), "sprite_index", tbl.get<double>("Tileset")});
+					}
+
+				}
+				if ((string)Code->GetName() == (string)"gml_Object_obj_floor_Create_0")
+				{
+					RValue roomAsset = g_YYTKInterface->CallBuiltin("asset_get_index", { "obj_floor" });
+					double allRooms = g_YYTKInterface->CallBuiltin("instance_number", { roomAsset }).ToDouble() - 1;
+
+					for (int i = 0; i < allRooms; i++)
+					{
+						if (!g_YYTKInterface->CallBuiltin("variable_instance_get", { Self, "has_pasted_blocks" }).ToBoolean() && g_YYTKInterface->CallBuiltin("variable_instance_get", {g_YYTKInterface->CallBuiltin("instance_find", {roomAsset, i}), "sprite_index"}).ToDouble() == 266)
 						{
-							if (tbl.get<string>("Name") == InstanceName || tbl.get<string>("Name") == "all")
+							g_YYTKInterface->CallBuiltin("variable_instance_set", { g_YYTKInterface->CallBuiltin("instance_find", {roomAsset, i}), "sprite_index", tbl.get<double>("Tileset") });
+						}
+					}
+					g_YYTKInterface->CallBuiltin("variable_instance_set", { Self, "has_pasted_blocks", true });
+				}
+			}
+
+
+		}
+
+		if (stateNum["all_behaviors"])
+		{
+			sol::table count = stateNum["all_behaviors"];
+			for (double var = 0; var < count.size() + 1; var++)
+			{
+				sol::table tbl = stateNum["all_behaviors"][var];
+				if (stateNum["all_behaviors"][var])
+				{
+					if (tbl.get<string>("DataType") == "floormap")
+					{
+						if (tbl.get<string>("Name") == InstanceName || tbl.get<string>("Name") == "all")
+						{
+							if ((string)Code->GetName() == (string)"gml_Object_obj_room_Create_0")
 							{
-								if ((string)Code->GetName() == (string)"gml_Object_obj_room_Create_0")
-								{
-									stateNum["all_behaviors"][var]["Create"].call(InstanceID);
-								}
+								stateNum["all_behaviors"][var]["Create"].call(InstanceID);
 							}
 						}
 					}
@@ -567,6 +561,7 @@ void DatabaseLoader::GMHooks::EnemyData(FWCodeEvent& FunctionContext)
 {
 	vector<string> AllNames;
 	//Enemy data
+	//no need to realloc this everytime, could be a static string array
 	AllNames.push_back("gml_Object_obj_enemy_Create_0");
 	AllNames.push_back("gml_Object_obj_swarmer_Step_0");
 	AllNames.push_back("gml_Object_obj_miniboss_template_Step_0");
@@ -645,74 +640,71 @@ void DatabaseLoader::GMHooks::EnemyData(FWCodeEvent& FunctionContext)
 		for (int stateNum = 0; stateNum < modState.size(); stateNum++)
 		{
 			sol::table count = modState.at(stateNum)["all_behaviors"];
-				for (double var = 0; var < count.size() + 1; var++)
+			for (double var = 0; var < count.size() + 1; var++)
+			{
+				// Boss scripts 
+				if (modState.at(stateNum)["all_behaviors"][var]["Boss"] == false)
+					continue;
+
+				sol::table tbl = modState.at(stateNum)["all_behaviors"][var];
+				// (run exclusively from obj_boss_intro_template)
+				if ((string)Code->GetName() == (string)"gml_Object_obj_boss_intro_template_Draw_0")
 				{
+					if (tbl.get<string>("Name") == InstanceName)
 					{
-						// Boss scripts 
+						g_YYTKInterface->CallBuiltin("variable_instance_set", { InstanceID, "timer", 0 });
+						g_YYTKInterface->CallBuiltin("variable_instance_set", { InstanceID, "depth", 100000 });
+						modState.at(stateNum)["all_behaviors"][var]["BossIntro"].call(InstanceID);
+						g_YYTKInterface->CallBuiltin("gpu_set_zwriteenable", { true });
+						g_YYTKInterface->CallBuiltin("gpu_set_ztestenable", { true });
+						g_YYTKInterface->CallBuiltin("gpu_set_depth", { 100000 });
+						modState.at(stateNum)["all_behaviors"][var]["BossBackground"].call(InstanceID);
+						if (g_YYTKInterface->CallBuiltin("instance_exists", { g_YYTKInterface->CallBuiltin("asset_get_index", {"obj_boss_template"}) }).ToBoolean())
+						{
+							g_YYTKInterface->CallBuiltin("variable_instance_set", { InstanceID, "myr_bossActive", true });
+						}
+						if (g_YYTKInterface->CallBuiltin("variable_instance_exists", { InstanceID, "myr_bossActive" }).ToBoolean() && !g_YYTKInterface->CallBuiltin("instance_exists", { g_YYTKInterface->CallBuiltin("asset_get_index", {"obj_boss_template"}) }).ToBoolean())
+						{
+							g_YYTKInterface->CallBuiltin("instance_destroy", {InstanceID});
+						}
+					}
+				}
+
+				if ((string)Code->GetName() == (string)"gml_Object_obj_beacon_Other_25")
+				{
+					static bool shouldSpawnCustom = false;
+					static string customBossName = "";
+					if (!FunctionContext.CalledOriginal())
+					{
 						if (modState.at(stateNum)["all_behaviors"][var]["Boss"] == true)
 						{
-
-							sol::table tbl = modState.at(stateNum)["all_behaviors"][var];
-							// (run exclusively from obj_boss_intro_template)
-							if ((string)Code->GetName() == (string)"gml_Object_obj_boss_intro_template_Draw_0")
+							sol::protected_function_result result = modState.at(stateNum)["all_behaviors"][var]["ShouldForceBoss"].call();
+							if (result.valid() && result.get<bool>())
 							{
-								if (tbl.get<string>("Name") == InstanceName)
-								{
-									g_YYTKInterface->CallBuiltin("variable_instance_set", { InstanceID, "timer", 0 });
-									g_YYTKInterface->CallBuiltin("variable_instance_set", { InstanceID, "depth", 100000 });
-									modState.at(stateNum)["all_behaviors"][var]["BossIntro"].call(InstanceID);
-									g_YYTKInterface->CallBuiltin("gpu_set_zwriteenable", { true });
-									g_YYTKInterface->CallBuiltin("gpu_set_ztestenable", { true });
-									g_YYTKInterface->CallBuiltin("gpu_set_depth", { 100000 });
-									modState.at(stateNum)["all_behaviors"][var]["BossBackground"].call(InstanceID);
-									if (g_YYTKInterface->CallBuiltin("instance_exists", { g_YYTKInterface->CallBuiltin("asset_get_index", {"obj_boss_template"}) }).ToBoolean())
-									{
-										g_YYTKInterface->CallBuiltin("variable_instance_set", { InstanceID, "myr_bossActive", true });
-									}
-									if (g_YYTKInterface->CallBuiltin("variable_instance_exists", { InstanceID, "myr_bossActive" }).ToBoolean() && !g_YYTKInterface->CallBuiltin("instance_exists", { g_YYTKInterface->CallBuiltin("asset_get_index", {"obj_boss_template"}) }).ToBoolean())
-									{
-										g_YYTKInterface->CallBuiltin("instance_destroy", {InstanceID});
-									}
-								}
-							}
-
-							if ((string)Code->GetName() == (string)"gml_Object_obj_beacon_Other_25")
-							{
-								static bool shouldSpawnCustom = false;
-								static string customBossName = "";
-								if (!FunctionContext.CalledOriginal())
-								{
-									if (modState.at(stateNum)["all_behaviors"][var]["Boss"] == true)
-									{
-										sol::protected_function_result result = modState.at(stateNum)["all_behaviors"][var]["ShouldForceBoss"].call();
-										if (result.valid() && result.get<bool>())
-										{
-											shouldSpawnCustom = true;
-											sol::table tbl = modState.at(stateNum)["all_behaviors"][var];
-											customBossName = tbl.get<string>("Name");
-										}
-									}
-								}
-
-								if (shouldSpawnCustom)
-								{
-									//GMWrappers::CallGameScript("gml_Script_music_do", { g_YYTKInterface->CallBuiltin("asset_get_index", {"mus_silencio"}) });
-									g_YYTKInterface->CallBuiltin("variable_instance_set", { Self, "getboss", g_YYTKInterface->CallBuiltin("asset_get_index", {"obj_boss_intro_template"}) });
-								}
-
-								FunctionContext.Call();
-
-								if (FunctionContext.CalledOriginal())
-								{
-									if (shouldSpawnCustom)
-									{
-										RValue intro = g_YYTKInterface->CallBuiltin("instance_find", { g_YYTKInterface->CallBuiltin("asset_get_index", {"obj_boss_intro_template"}), 0 });
-
-										g_YYTKInterface->CallBuiltin("variable_instance_set", { intro, "myr_CustomName", (string_view)customBossName });
-									}
-								}
+								shouldSpawnCustom = true;
+								sol::table tbl = modState.at(stateNum)["all_behaviors"][var];
+								customBossName = tbl.get<string>("Name");
 							}
 						}
+					}
+
+					if (shouldSpawnCustom)
+					{
+						//GMWrappers::CallGameScript("gml_Script_music_do", { g_YYTKInterface->CallBuiltin("asset_get_index", {"mus_silencio"}) });
+						g_YYTKInterface->CallBuiltin("variable_instance_set", { Self, "getboss", g_YYTKInterface->CallBuiltin("asset_get_index", {"obj_boss_intro_template"}) });
+					}
+
+					FunctionContext.Call();
+
+					if (FunctionContext.CalledOriginal())
+					{
+						if (shouldSpawnCustom)
+						{
+							RValue intro = g_YYTKInterface->CallBuiltin("instance_find", { g_YYTKInterface->CallBuiltin("asset_get_index", {"obj_boss_intro_template"}), 0 });
+
+							g_YYTKInterface->CallBuiltin("variable_instance_set", { intro, "myr_CustomName", (string_view)customBossName });
+						}
+					}
 				}
 			}
 			if (modState.at(stateNum)["all_behaviors"])
@@ -721,102 +713,100 @@ void DatabaseLoader::GMHooks::EnemyData(FWCodeEvent& FunctionContext)
 				for (double var = 0; var < count.size() + 1; var++)
 				{
 					sol::table tbl = modState.at(stateNum)["all_behaviors"][var];
-					if (modState.at(stateNum)["all_behaviors"][var])
+					if (!modState.at(stateNum)["all_behaviors"][var])
+						continue;
+					if (!(tbl.get<string>("Name") == InstanceName || tbl.get<string>("Name") == "all"))
+						continue;
+					// Enemy scripts
+					if (tbl.get<string>("DataType") == "enemy")
 					{
-						if (tbl.get<string>("Name") == InstanceName || tbl.get<string>("Name") == "all")
+						// Create script
+						if ((string)Code->GetName() == (string)"gml_Object_obj_enemy_Create_0")
 						{
-							// Enemy scripts
-							if (tbl.get<string>("DataType") == "enemy")
+							modState.at(stateNum)["all_behaviors"][var]["Create"].call(InstanceID);
+						}
+						// Destroy script
+						if ((string)Code->GetName() == (string)"gml_Object_obj_enemy_Destroy_0")
+						{
+							modState.at(stateNum)["all_behaviors"][var]["Destroy"].call(InstanceID);
+						}
+						// Draw script
+						if ((string)Code->GetName() == (string)"gml_Object_obj_enemy_Draw_0")
+						{
+							modState.at(stateNum)["all_behaviors"][var]["Draw"].call(InstanceID);
+						}
+						if (is_custom) //Why ? not sure, maybe someone forgot to update the code when it was duplicated, keeping the behavior to be safe
+						{
+							// Step script
+							if ((string)Code->GetName() == (string)"gml_Object_obj_swarmer_Step_0")
 							{
-								// Create script
-								if ((string)Code->GetName() == (string)"gml_Object_obj_enemy_Create_0")
-								{
-									modState.at(stateNum)["all_behaviors"][var]["Create"].call(InstanceID);
-								}
-								// Destroy script
-								if ((string)Code->GetName() == (string)"gml_Object_obj_enemy_Destroy_0")
-								{
-									modState.at(stateNum)["all_behaviors"][var]["Destroy"].call(InstanceID);
-								}
-								// Draw script
-								if ((string)Code->GetName() == (string)"gml_Object_obj_enemy_Draw_0")
-								{
-									modState.at(stateNum)["all_behaviors"][var]["Draw"].call(InstanceID);
-								}
-								if (is_custom) //Why ? not sure, maybe someone forgot to update the code when it was duplicated, keeping the behavior to be safe
-								{
-									// Step script
-									if ((string)Code->GetName() == (string)"gml_Object_obj_swarmer_Step_0")
-									{
-										modState.at(stateNum)["all_behaviors"][var]["Step"].call(InstanceID);
-									}
-									// Miniboss step script
-									if ((string)Code->GetName() == (string)"gml_Object_obj_miniboss_template_Step_0")
-									{
-										if (tbl.get<bool>("Miniboss") == true)
-										{
-											modState.at(stateNum)["all_behaviors"][var]["Step"].call(InstanceID);
-										}
-									}
-									// Miniboss draw script
-									if ((string)Code->GetName() == (string)"gml_Object_obj_miniboss_template_Draw_0")
-									{
-										if (tbl.get<bool>("Miniboss") == true)
-										{
-											modState.at(stateNum)["all_behaviors"][var]["Draw"].call(InstanceID);
-										}
-									}
-									// Boss step script
-									if ((string)Code->GetName() == (string)"gml_Object_obj_boss_template_Step_0")
-									{
-										if (tbl.get<bool>("Boss") == true)
-										{
-											modState.at(stateNum)["all_behaviors"][var]["Step"].call(InstanceID);
-										}
-									}
-									// Boss draw script
-									if ((string)Code->GetName() == (string)"gml_Object_obj_boss_template_Draw_0")
-									{
-										if (tbl.get<bool>("Boss") == true)
-										{
-											modState.at(stateNum)["all_behaviors"][var]["Draw"].call(InstanceID);
-										}
-									}
-								}
+								modState.at(stateNum)["all_behaviors"][var]["Step"].call(InstanceID);
 							}
-							// Projectile scripts
-							if (tbl.get<string>("DataType") == "projectile")
+							// Miniboss step script
+							if ((string)Code->GetName() == (string)"gml_Object_obj_miniboss_template_Step_0")
 							{
-								// Create script
-								if ((string)Code->GetName() == (string)"gml_Object_obj_bullet_type_Create_0")
-								{
-									modState.at(stateNum)["all_behaviors"][var]["Create"].call(InstanceID);
-								}
-								// Step script
-								if ((string)Code->GetName() == (string)"gml_Object_obj_bullet_type_Step_0")
+								if (tbl.get<bool>("Miniboss") == true)
 								{
 									modState.at(stateNum)["all_behaviors"][var]["Step"].call(InstanceID);
 								}
-								// Collide script
-								if ((string)Code->GetName() == (string)"gml_Object_obj_bullet_type_Collision_obj_floor")
-								{
-									modState.at(stateNum)["all_behaviors"][var]["CollideWith"].call(InstanceID, OtherInstanceID);
-								}
 							}
-							// Global scripts
-							if (tbl.get<string>("DataType") == "global")
+							// Miniboss draw script
+							if ((string)Code->GetName() == (string)"gml_Object_obj_miniboss_template_Draw_0")
 							{
-								// DrawUI script
-								if ((string)Code->GetName() == (string)"gml_Object_obj_view_Draw_73")
+								if (tbl.get<bool>("Miniboss") == true)
 								{
-									modState.at(stateNum)["all_behaviors"][var]["DrawUI"].call();
-								}
-								// Draw script
-								if ((string)Code->GetName() == (string)"gml_Object_obj_player_Draw_0")
-								{
-									modState.at(stateNum)["all_behaviors"][var]["Draw"].call();
+									modState.at(stateNum)["all_behaviors"][var]["Draw"].call(InstanceID);
 								}
 							}
+							// Boss step script
+							if ((string)Code->GetName() == (string)"gml_Object_obj_boss_template_Step_0")
+							{
+								if (tbl.get<bool>("Boss") == true)
+								{
+									modState.at(stateNum)["all_behaviors"][var]["Step"].call(InstanceID);
+								}
+							}
+							// Boss draw script
+							if ((string)Code->GetName() == (string)"gml_Object_obj_boss_template_Draw_0")
+							{
+								if (tbl.get<bool>("Boss") == true)
+								{
+									modState.at(stateNum)["all_behaviors"][var]["Draw"].call(InstanceID);
+								}
+							}
+						}
+					}
+					// Projectile scripts
+					if (tbl.get<string>("DataType") == "projectile")
+					{
+						// Create script
+						if ((string)Code->GetName() == (string)"gml_Object_obj_bullet_type_Create_0")
+						{
+							modState.at(stateNum)["all_behaviors"][var]["Create"].call(InstanceID);
+						}
+						// Step script
+						if ((string)Code->GetName() == (string)"gml_Object_obj_bullet_type_Step_0")
+						{
+							modState.at(stateNum)["all_behaviors"][var]["Step"].call(InstanceID);
+						}
+						// Collide script
+						if ((string)Code->GetName() == (string)"gml_Object_obj_bullet_type_Collision_obj_floor")
+						{
+							modState.at(stateNum)["all_behaviors"][var]["CollideWith"].call(InstanceID, OtherInstanceID);
+						}
+					}
+					// Global scripts
+					if (tbl.get<string>("DataType") == "global")
+					{
+						// DrawUI script
+						if ((string)Code->GetName() == (string)"gml_Object_obj_view_Draw_73")
+						{
+							modState.at(stateNum)["all_behaviors"][var]["DrawUI"].call();
+						}
+						// Draw script
+						if ((string)Code->GetName() == (string)"gml_Object_obj_player_Draw_0")
+						{
+							modState.at(stateNum)["all_behaviors"][var]["Draw"].call();
 						}
 					}
 				}
@@ -833,67 +823,61 @@ void DatabaseLoader::GMHooks::CartridgeData(FWCodeEvent& FunctionContext) {
 
 	CCode* Code = std::get<2>(FunctionContext.Arguments());
 
+	if (std::find(AllNames.begin(), AllNames.end(), Code->GetName()) == AllNames.end())
+		return;
 
-	if (std::find(AllNames.begin(), AllNames.end(), Code->GetName()) != AllNames.end())
+	CInstance* GlobalInstance;
+
+	RValue view;
+	g_YYTKInterface->GetGlobalInstance(&GlobalInstance);
+
+	g_YYTKInterface->GetBuiltin("view_current", GlobalInstance, 0, view);
+
+	RValue viewCamera = g_YYTKInterface->CallBuiltin("view_get_camera", { view });
+
+	CInstance* Self = std::get<0>(FunctionContext.Arguments());
+	CInstance* Other = std::get<1>(FunctionContext.Arguments());
+	RValue Instance = Self->ToRValue();
+	RValue OtherInstance = Other->ToRValue();
+	double InstanceID = g_YYTKInterface->CallBuiltin("variable_instance_get", { Instance, "id" }).ToDouble();
+	double OtherInstanceID = g_YYTKInterface->CallBuiltin("variable_instance_get", { OtherInstance, "id" }).ToDouble();
+
+	RValue objectIndex = g_YYTKInterface->CallBuiltin("variable_instance_get", { Instance, "object_index" });
+
+	string InstanceName = "";
+
+
+	bool is_custom = false;
+	if (g_YYTKInterface->CallBuiltin("variable_instance_exists", { Instance, "myr_CustomName" }).ToBoolean())
 	{
-		CInstance* GlobalInstance;
+		is_custom = true;
+		InstanceName = g_YYTKInterface->CallBuiltin("variable_instance_get", { Instance, "myr_CustomName" }).ToString();
+	} else {
+		InstanceName = g_YYTKInterface->CallBuiltin("object_get_name", { objectIndex }).ToString();
+	}
 
-		RValue view;
-		g_YYTKInterface->GetGlobalInstance(&GlobalInstance);
+	for (int stateNum = 0; stateNum < modState.size(); stateNum++)
+	{
+		if (!modState.at(stateNum)["all_behaviors"])
+			continue;
 
-		g_YYTKInterface->GetBuiltin("view_current", GlobalInstance, 0, view);
-
-		RValue viewCamera = g_YYTKInterface->CallBuiltin("view_get_camera", { view });
-
-		CInstance* Self = std::get<0>(FunctionContext.Arguments());
-		CInstance* Other = std::get<1>(FunctionContext.Arguments());
-		RValue Instance = Self->ToRValue();
-		RValue OtherInstance = Other->ToRValue();
-		double InstanceID = g_YYTKInterface->CallBuiltin("variable_instance_get", { Instance, "id" }).ToDouble();
-		double OtherInstanceID = g_YYTKInterface->CallBuiltin("variable_instance_get", { OtherInstance, "id" }).ToDouble();
-
-		RValue objectIndex = g_YYTKInterface->CallBuiltin("variable_instance_get", { Instance, "object_index" });
-
-		string InstanceName = "";
-
-
-		bool is_custom = false;
-		if (g_YYTKInterface->CallBuiltin("variable_instance_exists", { Instance, "myr_CustomName" }).ToBoolean())
+		sol::table count = modState.at(stateNum)["all_behaviors"];
+		for (double var = 0; var < count.size() + 1; var++)
 		{
-			is_custom = true;
-			InstanceName = g_YYTKInterface->CallBuiltin("variable_instance_get", { Instance, "myr_CustomName" }).ToString();
-		} else {
-			InstanceName = g_YYTKInterface->CallBuiltin("object_get_name", { objectIndex }).ToString();
-		}
-
-		for (int stateNum = 0; stateNum < modState.size(); stateNum++)
-		{
-			sol::table count = modState.at(stateNum)["all_behaviors"];
-
-			if (modState.at(stateNum)["all_behaviors"])
+			if (!modState.at(stateNum)["all_behaviors"][var])
+				continue;
+			if (is_custom) { // this does not look right, the name of the cart should be pushed when it is registered not on every frame !
+				g_YYTKInterface->CallBuiltin("array_push", { GMWrappers::GetGlobal("cart_name"), modState.at(stateNum)["all_behaviors"][var]["ShownName"] });
+				g_YYTKInterface->CallBuiltin("array_push", { GMWrappers::GetGlobal("cart_desc"), modState.at(stateNum)["all_behaviors"][var]["Description"] });
+			}
+			sol::table tbl = modState.at(stateNum)["all_behaviors"][var];
+			if (!(tbl.get<string>("Name") == InstanceName || tbl.get<string>("Name") == "all"))
+				continue;
+			if (tbl.get<string>("DataType") != "cartridge")
+				continue;
+			if ((string)Code->GetName() == (string)"gml_Object_obj_cartridge_Create_0")
 			{
-				sol::table count = modState.at(stateNum)["all_behaviors"];
-				for (double var = 0; var < count.size() + 1; var++)
-				{
-					if (is_custom) { // this does not look right, the name of the cart should be pushed when it is registered not on every frame !
-						g_YYTKInterface->CallBuiltin("array_push", { GMWrappers::GetGlobal("cart_name"), modState.at(stateNum)["all_behaviors"][var]["ShownName"] });
-						g_YYTKInterface->CallBuiltin("array_push", { GMWrappers::GetGlobal("cart_desc"), modState.at(stateNum)["all_behaviors"][var]["Description"] });
-					}
-					sol::table tbl = modState.at(stateNum)["all_behaviors"][var];
-					if (modState.at(stateNum)["all_behaviors"][var])
-					{
-						if (tbl.get<string>("Name") == InstanceName|| tbl.get<string>("Name") == "all")
-						{
-							if (tbl.get<string>("DataType") == "cartridge")
-							{
-								if ((string)Code->GetName() == (string)"gml_Object_obj_cartridge_Create_0")
-								{
-									modState.at(stateNum)["all_behaviors"][var]["Create"].call(InstanceID);
-								}
-							}
-						}
-					}
-				}
+				modState.at(stateNum)["all_behaviors"][var]["Create"].call(InstanceID);
 			}
 		}
 	}
