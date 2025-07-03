@@ -32,10 +32,17 @@ sol::lua_value ValueToObject(lua_State* state, RValue obj)
 	{
 	case YYTK::VALUE_REAL:
 		return sol::lua_value(state, obj.ToDouble());
+	case YYTK::VALUE_INT64:
+	case YYTK::VALUE_INT32:
+		return sol::lua_value(state, obj.ToInt64());
 	case YYTK::VALUE_BOOL:
 		return sol::lua_value(state, obj.ToBoolean());
 	case YYTK::VALUE_STRING:
 		return sol::lua_value(state, obj.ToString());
+	case YYTK::VALUE_UNDEFINED:
+		return sol::lua_value(state, nullptr);
+	default:
+		return sol::lua_value(state, nullptr);
 	}
 }
 RValue DatabaseLoader::DBLua::CallBuiltinLua(
