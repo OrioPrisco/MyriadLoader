@@ -41,6 +41,26 @@ sol::lua_value ValueToObject(lua_State* state, RValue obj)
 		return sol::lua_value(state, obj.ToString());
 	case YYTK::VALUE_UNDEFINED:
 		return sol::lua_value(state, nullptr);
+	case YYTK::VALUE_ARRAY:
+	{
+		std::vector<RValue> vals = obj.ToVector();
+		sol::state_view sview(state);
+		sol::table ret = sview.create_table();
+		for (int i = 0; i < vals.size(); i++) {
+			ret[i + 1] = ValueToObject(state, vals[i]);
+		}
+		return ret;
+	}
+	case YYTK::VALUE_OBJECT:
+	{
+		std::map<std::string, RValue> val = obj.ToMap();
+		sol::state_view sview(state);
+		sol::table ret = sview.create_table();
+		for (auto& it : val) {
+			ret[it.first] = ValueToObject(state, it.second);
+		}
+		return ret;
+	}
 	default:
 		return sol::lua_value(state, nullptr);
 	}
@@ -270,6 +290,23 @@ sol::lua_value DatabaseLoader::DBLua::GetVar(lua_State* state, double inst, stri
 sol::lua_value DatabaseLoader::DBLua::GetGlobal(lua_State* state, string varName)
 {
 	return ValueToObject(state, GMWrappers::GetGlobal(varName));
+}
+
+sol::lua_value DatabaseLoader::DBLua::GetDSMap(lua_State* state, double ds_map) {
+	sol::state_view sview(state);
+	sol::table table = sview.create_table();
+
+	if (g_YYTKInterface->CallBuiltin("ds_map_find_first", {ds_map}).m_Kind == YYTK::VALUE_UNDEFINED) {
+		return table; // the ds map is either empty or it doesn't exist
+	}
+	RValue r_keys = g_YYTKInterface->CallBuiltin("ds_map_keys_to_array", {ds_map});
+	RValue r_values = g_YYTKInterface->CallBuiltin("ds_map_values_to_array", {ds_map});
+	auto keys = r_keys.ToVector();
+	auto values = r_values.ToVector();
+	for (int i = 0; i < keys.size(); i++) {
+		table[ValueToObject(state, keys[i])] = ValueToObject(state, values[i]);
+	}
+	return table;
 }
 
 void DatabaseLoader::DBLua::InitDouble(double inst, string varName, double val)
