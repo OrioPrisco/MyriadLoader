@@ -864,6 +864,12 @@ EXPORTED AurieStatus ModuleInitialize(
 
 	g_YYTKInterface->CallBuiltin("instance_activate_all", {});
 
+	//TODO: check that the array functions do not already work
+	//check that the value being overriden is 0
+	//check that array functions work after the override
+	g_YYTKInterface->PrintWarning("I'm about to do some sketchy stuff !");
+	*(int64_t*)((char *)g_YYTKInterface + 0x3C0) = 0x90;
+
 	return AURIE_SUCCESS;
 }
 
