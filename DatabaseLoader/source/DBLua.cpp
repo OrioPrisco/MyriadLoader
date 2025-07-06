@@ -292,10 +292,15 @@ sol::lua_value DatabaseLoader::DBLua::GetGlobal(lua_State* state, string varName
 	return ValueToObject(state, GMWrappers::GetGlobal(varName));
 }
 
+//TODO: use ds_map_is_list/map to recursively get lists/maps ?
+//circular reference might be problematic
 sol::lua_value DatabaseLoader::DBLua::GetDSMap(lua_State* state, double ds_map) {
 	sol::state_view sview(state);
-	sol::table table = sview.create_table();
 
+	if (!g_YYTKInterface->CallBuiltin("ds_exists", {ds_map, 1}).ToBoolean())
+		return sol::lua_value(state, nullptr); // No such map
+
+	sol::table table = sview.create_table();
 	if (g_YYTKInterface->CallBuiltin("ds_map_find_first", {ds_map}).m_Kind == YYTK::VALUE_UNDEFINED) {
 		return table; // the ds map is either empty or it doesn't exist
 	}
