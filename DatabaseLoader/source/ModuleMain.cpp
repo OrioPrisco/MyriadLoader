@@ -288,6 +288,8 @@ sol::state DatabaseLoader::MakeModState()
 
 	inState["get_ds_map"] = bind_one(DBLua::GetDSMap, state_ptr);
 
+	inState["get_ds_list"] = bind_one(DBLua::GetDSList, state_ptr);
+
 	inState["custom_sprite"] = DBLua::GetCustomSprite;
 
 	inState["custom_sound"] = DBLua::GetCustomSound;

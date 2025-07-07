@@ -314,6 +314,23 @@ sol::lua_value DatabaseLoader::DBLua::GetDSMap(lua_State* state, double ds_map) 
 	return table;
 }
 
+//TODO: use ds_list_is_list/map to recursively get lists/maps ?
+//circular reference might be problematic
+sol::lua_value DatabaseLoader::DBLua::GetDSList(lua_State* state, double ds_list) {
+	sol::state_view sview(state);
+	if (!g_YYTKInterface->CallBuiltin("ds_exists", {ds_list, 2}).ToBoolean())
+		return sol::lua_value(state, nullptr); // No such list
+
+	sol::table table = sview.create_table();
+
+	size_t list_size = g_YYTKInterface->CallBuiltin("ds_list_size", {ds_list}).ToInt64();
+	for (size_t i = 0; i < list_size; i++) {
+		table[i] = ValueToObject(state, g_YYTKInterface->CallBuiltin("ds_list_find_value", {ds_list, i}));
+	}
+	return table;
+}
+
+
 void DatabaseLoader::DBLua::InitDouble(double inst, string varName, double val)
 {
 	if (!g_YYTKInterface->CallBuiltin("variable_instance_exists", {

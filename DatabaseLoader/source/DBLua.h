@@ -27,6 +27,7 @@ namespace DatabaseLoader
 		static sol::lua_value GetVar(lua_State* state, double inst, string varName);
 		static sol::lua_value GetGlobal(lua_State* state, string varName);
 		static sol::lua_value GetDSMap(lua_State* state, double ds_map);
+		static sol::lua_value GetDSList(lua_State* state, double ds_list);
 		static double GetDouble(double inst, string varName);
 		static bool GetBool(double inst, string varName);
 		static string GetString(double inst, string varName);
