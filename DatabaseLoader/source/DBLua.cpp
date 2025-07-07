@@ -51,6 +51,18 @@ sol::lua_value ValueToObject(lua_State* state, RValue obj)
 		}
 		return ret;
 	}
+	case YYTK::VALUE_REF:
+	{
+		sol::state_view sview(state);
+		sol::table ret = sview.create_table();
+
+		std::vector<RValue> fields = g_YYTKInterface->CallBuiltin("variable_struct_get_names", {obj}).ToVector();
+		for (auto& rvalue : fields) {
+			std::string field = rvalue.ToString();
+			ret[field] = ValueToObject(state, g_YYTKInterface->CallBuiltin("variable_struct_get", {obj, rvalue}));
+		}
+		return ret;
+	}
 	case YYTK::VALUE_OBJECT:
 	{
 		std::map<std::string, RValue> val = obj.ToMap();
