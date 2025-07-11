@@ -517,7 +517,7 @@ void DatabaseLoader::GMHooks::FloorData(FWCodeEvent& FunctionContext)
 							}
 
 						}
-						if ((string)Code->GetName() == (string)"gml_Object_obj_floor_Create_0");
+						if ((string)Code->GetName() == (string)"gml_Object_obj_floor_Create_0")
 						{
 							RValue roomAsset = g_YYTKInterface->CallBuiltin("asset_get_index", { "obj_floor" });
 							double allRooms = g_YYTKInterface->CallBuiltin("instance_number", { roomAsset }).ToDouble() - 1;
