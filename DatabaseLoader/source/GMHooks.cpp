@@ -562,6 +562,42 @@ void DatabaseLoader::GMHooks::FloorData(FWCodeEvent& FunctionContext)
 	}
 }
 
+static void SpawnBossLogic(FWCodeEvent& FunctionContext, CCode* Code) {
+	CInstance* Self = std::get<0>(FunctionContext.Arguments());
+	if ((string)Code->GetName() == (string)"gml_Object_obj_beacon_Other_25")
+	{
+		bool shouldSpawnCustom = false;
+		string customBossName = "";
+		for (auto& mod : modState) {
+			for (auto key_behavior : mod.get<sol::table>("all_behaviors")) {
+				auto behavior = (sol::table)key_behavior.second;
+				if (behavior["Boss"] == true)
+				{
+					sol::protected_function_result result = behavior["ShouldForceBoss"].call();
+					if (result.valid() && result.get<bool>())
+					{
+						shouldSpawnCustom = true;
+						customBossName = behavior.get<string>("Name");
+					}
+				}
+			}
+		}
+
+		if (shouldSpawnCustom)
+		{
+			//GMWrappers::CallGameScript("gml_Script_music_do", { g_YYTKInterface->CallBuiltin("asset_get_index", {"mus_silencio"}) });
+			g_YYTKInterface->CallBuiltin("variable_instance_set", { Self, "getboss", g_YYTKInterface->CallBuiltin("asset_get_index", {"obj_boss_intro_template"}) });
+			FunctionContext.Call();
+			RValue intro = g_YYTKInterface->CallBuiltin("instance_find", { g_YYTKInterface->CallBuiltin("asset_get_index", {"obj_boss_intro_template"}), 0 });
+
+			g_YYTKInterface->CallBuiltin("variable_instance_set", { intro, "myr_CustomName", (string_view)customBossName });
+		}
+		else {
+			FunctionContext.Call();
+		}
+	}
+}
+
 
 void DatabaseLoader::GMHooks::EnemyData(FWCodeEvent& FunctionContext)
 {
@@ -641,6 +677,7 @@ void DatabaseLoader::GMHooks::EnemyData(FWCodeEvent& FunctionContext)
 		} else {
 			InstanceName = g_YYTKInterface->CallBuiltin("object_get_name", { objectIndex }).ToString();
 		}
+		SpawnBossLogic(FunctionContext, Code);
 
 		for (int stateNum = 0; stateNum < modState.size(); stateNum++)
 		{
@@ -676,42 +713,6 @@ void DatabaseLoader::GMHooks::EnemyData(FWCodeEvent& FunctionContext)
 								}
 							}
 
-							if ((string)Code->GetName() == (string)"gml_Object_obj_beacon_Other_25")
-							{
-								static bool shouldSpawnCustom = false;
-								static string customBossName = "";
-								if (!FunctionContext.CalledOriginal())
-								{
-									if (modState.at(stateNum)["all_behaviors"][var]["Boss"] == true)
-									{
-										sol::protected_function_result result = modState.at(stateNum)["all_behaviors"][var]["ShouldForceBoss"].call();
-										if (result.valid() && result.get<bool>())
-										{
-											shouldSpawnCustom = true;
-											sol::table tbl = modState.at(stateNum)["all_behaviors"][var];
-											customBossName = tbl.get<string>("Name");
-										}
-									}
-								}
-
-								if (shouldSpawnCustom)
-								{
-									//GMWrappers::CallGameScript("gml_Script_music_do", { g_YYTKInterface->CallBuiltin("asset_get_index", {"mus_silencio"}) });
-									g_YYTKInterface->CallBuiltin("variable_instance_set", { Self, "getboss", g_YYTKInterface->CallBuiltin("asset_get_index", {"obj_boss_intro_template"}) });
-								}
-
-								FunctionContext.Call();
-
-								if (FunctionContext.CalledOriginal())
-								{
-									if (shouldSpawnCustom)
-									{
-										RValue intro = g_YYTKInterface->CallBuiltin("instance_find", { g_YYTKInterface->CallBuiltin("asset_get_index", {"obj_boss_intro_template"}), 0 });
-
-										g_YYTKInterface->CallBuiltin("variable_instance_set", { intro, "myr_CustomName", (string_view)customBossName });
-									}
-								}
-							}
 						}
 				}
 			}
