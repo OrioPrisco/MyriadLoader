@@ -73,7 +73,7 @@
   </ImportGroup>
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
-    <OutDir>C:\Users\Roanv\Downloads</OutDir>
+    <OutDir>$(SolutionDir)\build</OutDir>
     <IncludePath>$(ProjectDir)include;F:\includes\lua54\include;F:\includes\sol3\include;</IncludePath>
     <LibraryPath>;$(VC_LibraryPath_x64);$(WindowsSDK_LibraryPath_x64);</LibraryPath>
     <ExternalIncludePath>$(VC_IncludePath);$(WindowsSDK_IncludePath);</ExternalIncludePath>
