@@ -852,6 +852,15 @@ EXPORTED AurieStatus ModuleInitialize(
 
 	DatabaseLoader::g_YYTKInterface = yytk_interface;
 
+#ifdef _DEBUG
+
+	g_YYTKInterface->PrintWarning("Myriad.dll was compiled in Debug mode which has a different ABI. Refusing to execute to prevent crashing");
+
+	return AURIE_MODULE_INITIALIZATION_FAILED;
+
+#endif
+
+
 	yytk_interface->CreateCallback(
 		Module,
 		YYTK::EVENT_OBJECT_CALL,
