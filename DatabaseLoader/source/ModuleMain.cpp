@@ -362,8 +362,28 @@ sol::state DatabaseLoader::MakeModState()
 
 	inState["check_cart"] = DBLua::CheckCart;
 
-	inState["error_handler"] = [&](std::string err) {
+	inState["error_handler"] = [state_ptr](std::string err) {
 		g_YYTKInterface->PrintWarning("An Error occured : %s", err.c_str());
+		g_YYTKInterface->PrintWarning("Traceback");
+
+		lua_Debug dbg_info;
+		for (int level = 1;lua_getstack(state_ptr, level, &dbg_info);level++) {
+			lua_getinfo(state_ptr, "nSl", &dbg_info);
+			std::string source = dbg_info.source;
+			if (source[0] == '@') {
+				auto pos = source.find("Mods");
+				if (pos != std::string::npos)
+					source.erase(0, pos + 4);
+				g_YYTKInterface->PrintWarning("at %s:%d", source.c_str(), dbg_info.currentline);
+			} else {
+				g_YYTKInterface->PrintWarning("builtin");
+			}
+			if (dbg_info.name == nullptr) {
+				dbg_info.name = "EntryPoint";
+			}
+			g_YYTKInterface->PrintWarning("    in %s", dbg_info.name);
+		}
+
 		return err;
 	};
 
